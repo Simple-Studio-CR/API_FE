@@ -362,9 +362,9 @@ public class GeneraXmlImpl implements IGeneraXml {
     if (c.getOtros() != null && c.getOtros().length() > 0)
       xmlString = xmlString + "<OtroTexto>" + procesarTexto(c.getOtros()) + "</OtroTexto>"; 
     xmlString = xmlString + "<OtroContenido>";
-    xmlString = xmlString + "<ContactoDesarrollador xmlns=\"https://simplestudio.app\">";
+    xmlString = xmlString + "<ContactoDesarrollador xmlns=\"https://samyx.digital\">";
     xmlString = xmlString + "<ProveedorSistemaComprobantesElectronicos>";
-    xmlString = xmlString + "<Nombre>SimpleStudio</Nombre>";
+    xmlString = xmlString + "<Nombre>SamyxFacturador</Nombre>";
     xmlString = xmlString + "<Identificacion>";
     xmlString = xmlString + "<Tipo>01</Tipo>";
     xmlString = xmlString + "<Numero>114970286</Numero>";
