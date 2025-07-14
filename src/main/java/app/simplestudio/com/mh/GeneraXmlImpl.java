@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Iterator;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,13 +86,13 @@ public class GeneraXmlImpl implements IGeneraXml {
     String xmlString = "";
     String tipoDoc = c.getClave().substring(29, 31);
     xmlString = xmlString + "<Clave>" + c.getClave() + "</Clave>";
-    xmlString = xmlString + "<CodigoActividad>" + this._funcionesService.str_pad(c.getCodigoActividad(), 6, "0", "STR_PAD_LEFT") + "</CodigoActividad>";
+    xmlString = xmlString + "<CodigoActividad>" + this._funcionesService.strPad(c.getCodigoActividad(), 6, "0", "STR_PAD_LEFT") + "</CodigoActividad>";
     xmlString = xmlString + "<NumeroConsecutivo>" + c.getConsecutivo() + "</NumeroConsecutivo>";
     xmlString = xmlString + "<FechaEmision>" + c.getFechaEmision() + "</FechaEmision>";
     xmlString = xmlString + "<Emisor>";
     xmlString = xmlString + "<Nombre>" + procesarTexto(c.getEmisorNombre()) + "</Nombre>";
     xmlString = xmlString + "<Identificacion>";
-    xmlString = xmlString + "<Tipo>" + this._funcionesService.str_pad(c.getEmisorTipoIdentif(), 2, "0", "STR_PAD_LEFT") + "</Tipo>";
+    xmlString = xmlString + "<Tipo>" + this._funcionesService.strPad(c.getEmisorTipoIdentif(), 2, "0", "STR_PAD_LEFT") + "</Tipo>";
     xmlString = xmlString + "<Numero>" + c.getEmisorNumIdentif() + "</Numero>";
     xmlString = xmlString + "</Identificacion>";
     if (c.getNombreComercial() != null)
@@ -102,10 +102,10 @@ public class GeneraXmlImpl implements IGeneraXml {
       .getEmisorOtrasSenas() != null && !c.getEmisorOtrasSenas().equals("")) {
       xmlString = xmlString + "<Ubicacion>";
       xmlString = xmlString + "<Provincia>" + c.getEmisorProv() + "</Provincia>";
-      xmlString = xmlString + "<Canton>" + this._funcionesService.str_pad(c.getEmisorCanton(), 2, "0", "STR_PAD_LEFT") + "</Canton>";
-      xmlString = xmlString + "<Distrito>" + this._funcionesService.str_pad(c.getEmisorDistrito(), 2, "0", "STR_PAD_LEFT") + "</Distrito>";
+      xmlString = xmlString + "<Canton>" + this._funcionesService.strPad(c.getEmisorCanton(), 2, "0", "STR_PAD_LEFT") + "</Canton>";
+      xmlString = xmlString + "<Distrito>" + this._funcionesService.strPad(c.getEmisorDistrito(), 2, "0", "STR_PAD_LEFT") + "</Distrito>";
       if (c.getEmisorBarrio() != "")
-        xmlString = xmlString + "<Barrio>" + this._funcionesService.str_pad(c.getEmisorBarrio(), 2, "0", "STR_PAD_LEFT") + "</Barrio>"; 
+        xmlString = xmlString + "<Barrio>" + this._funcionesService.strPad(c.getEmisorBarrio(), 2, "0", "STR_PAD_LEFT") + "</Barrio>"; 
       xmlString = xmlString + "<OtrasSenas>" + c.getEmisorOtrasSenas() + "</OtrasSenas>";
       xmlString = xmlString + "</Ubicacion>";
     } 
@@ -136,7 +136,7 @@ public class GeneraXmlImpl implements IGeneraXml {
         if (c.getReceptorTipoIdentif() != null && !c.getReceptorTipoIdentif().equals("") && c
           .getReceptorNumIdentif() != null && !c.getReceptorNumIdentif().equals("")) {
           xmlString = xmlString + "<Identificacion>";
-          xmlString = xmlString + "<Tipo>" + this._funcionesService.str_pad(c.getReceptorTipoIdentif(), 2, "0", "STR_PAD_LEFT") + "</Tipo>";
+          xmlString = xmlString + "<Tipo>" + this._funcionesService.strPad(c.getReceptorTipoIdentif(), 2, "0", "STR_PAD_LEFT") + "</Tipo>";
           xmlString = xmlString + "<Numero>" + c.getReceptorNumIdentif() + "</Numero>";
           xmlString = xmlString + "</Identificacion>";
         } 
@@ -147,10 +147,10 @@ public class GeneraXmlImpl implements IGeneraXml {
             .getReceptorOtrasSenas() != null && !c.getReceptorOtrasSenas().equals("")) {
             xmlString = xmlString + "<Ubicacion>";
             xmlString = xmlString + "<Provincia>" + c.getReceptorProvincia() + "</Provincia>";
-            xmlString = xmlString + "<Canton>" + this._funcionesService.str_pad(c.getReceptorCanton(), 2, "0", "STR_PAD_LEFT") + "</Canton>";
-            xmlString = xmlString + "<Distrito>" + this._funcionesService.str_pad(c.getReceptorDistrito(), 2, "0", "STR_PAD_LEFT") + "</Distrito>";
+            xmlString = xmlString + "<Canton>" + this._funcionesService.strPad(c.getReceptorCanton(), 2, "0", "STR_PAD_LEFT") + "</Canton>";
+            xmlString = xmlString + "<Distrito>" + this._funcionesService.strPad(c.getReceptorDistrito(), 2, "0", "STR_PAD_LEFT") + "</Distrito>";
             if (c.getReceptorBarrio() != null && !c.getReceptorBarrio().equals(""))
-              xmlString = xmlString + "<Barrio>" + this._funcionesService.str_pad(c.getReceptorBarrio(), 2, "0", "STR_PAD_LEFT") + "</Barrio>"; 
+              xmlString = xmlString + "<Barrio>" + this._funcionesService.strPad(c.getReceptorBarrio(), 2, "0", "STR_PAD_LEFT") + "</Barrio>"; 
             xmlString = xmlString + "<OtrasSenas>" + c.getReceptorOtrasSenas() + "</OtrasSenas>";
             xmlString = xmlString + "</Ubicacion>";
           }  
@@ -177,17 +177,17 @@ public class GeneraXmlImpl implements IGeneraXml {
       xmlString = xmlString + "<Nombre>" + procesarTexto(c.getReceptorNombre()) + "</Nombre>";
       xmlString = xmlString + "</Receptor>";
     } 
-    xmlString = xmlString + "<CondicionVenta>" + this._funcionesService.str_pad(c.getCondVenta(), 2, "0", "STR_PAD_LEFT") + "</CondicionVenta>";
+    xmlString = xmlString + "<CondicionVenta>" + this._funcionesService.strPad(c.getCondVenta(), 2, "0", "STR_PAD_LEFT") + "</CondicionVenta>";
     xmlString = xmlString + "<PlazoCredito>" + c.getPlazoCredito() + "</PlazoCredito>";
     ObjectMapper objectMapper = new ObjectMapper();
     if (c.getMedioPago() != null && c.getMedioPago().length() > 0)
-      xmlString = xmlString + "<MedioPago>" + this._funcionesService.str_pad(c.getMedioPago(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
+      xmlString = xmlString + "<MedioPago>" + this._funcionesService.strPad(c.getMedioPago(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
     if (c.getMedioPago2() != null && c.getMedioPago2().length() > 0)
-      xmlString = xmlString + "<MedioPago>" + this._funcionesService.str_pad(c.getMedioPago2(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
+      xmlString = xmlString + "<MedioPago>" + this._funcionesService.strPad(c.getMedioPago2(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
     if (c.getMedioPago3() != null && c.getMedioPago3().length() > 0)
-      xmlString = xmlString + "<MedioPago>" + this._funcionesService.str_pad(c.getMedioPago3(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
+      xmlString = xmlString + "<MedioPago>" + this._funcionesService.strPad(c.getMedioPago3(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
     if (c.getMedioPago4() != null && c.getMedioPago4().length() > 0)
-      xmlString = xmlString + "<MedioPago>" + this._funcionesService.str_pad(c.getMedioPago4(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
+      xmlString = xmlString + "<MedioPago>" + this._funcionesService.strPad(c.getMedioPago4(), 2, "0", "STR_PAD_LEFT") + "</MedioPago>"; 
     xmlString = xmlString + "<DetalleServicio>";
     String impuestosJson = "";
     String codigosComerciales = "";
@@ -212,7 +212,7 @@ public class GeneraXmlImpl implements IGeneraXml {
             while (elementsCodigoComercial.hasNext()) {
               JsonNode cc = elementsCodigoComercial.next();
               xmlString = xmlString + "<CodigoComercial>";
-              xmlString = xmlString + "<Tipo>" + this._funcionesService.str_pad(cc.path("tipo").asText(), 2, "0", "STR_PAD_LEFT") + "</Tipo>";
+              xmlString = xmlString + "<Tipo>" + this._funcionesService.strPad(cc.path("tipo").asText(), 2, "0", "STR_PAD_LEFT") + "</Tipo>";
               xmlString = xmlString + "<Codigo>" + procesarTexto(cc.path("codigo").asText()) + "</Codigo>";
               xmlString = xmlString + "</CodigoComercial>";
             } 
@@ -236,7 +236,7 @@ public class GeneraXmlImpl implements IGeneraXml {
               JsonNode md = elementsMontoDescuento.next();
               if (md.get("montoDescuento").asDouble() > 0.0D) {
                 xmlString = xmlString + "<Descuento>";
-                xmlString = xmlString + "<MontoDescuento>" + this._funcionesService.str_pad(md.get("montoDescuento").asText(), 2, "0", "STR_PAD_LEFT") + "</MontoDescuento>";
+                xmlString = xmlString + "<MontoDescuento>" + this._funcionesService.strPad(md.get("montoDescuento").asText(), 2, "0", "STR_PAD_LEFT") + "</MontoDescuento>";
                 xmlString = xmlString + "<NaturalezaDescuento>" + procesarTexto(md.path("naturalezaDescuento").asText()) + "</NaturalezaDescuento>";
                 xmlString = xmlString + "</Descuento>";
               } 
@@ -254,8 +254,8 @@ public class GeneraXmlImpl implements IGeneraXml {
           while (impuestos.hasNext()) {
             JsonNode j = impuestos.next();
             xmlString = xmlString + "<Impuesto>";
-            xmlString = xmlString + "<Codigo>" + this._funcionesService.str_pad(j.path("codigo").asText(), 2, "0", "STR_PAD_LEFT") + "</Codigo>";
-            xmlString = xmlString + "<CodigoTarifa>" + this._funcionesService.str_pad(j.path("codigoTarifa").asText(), 2, "0", "STR_PAD_LEFT") + "</CodigoTarifa>";
+            xmlString = xmlString + "<Codigo>" + this._funcionesService.strPad(j.path("codigo").asText(), 2, "0", "STR_PAD_LEFT") + "</Codigo>";
+            xmlString = xmlString + "<CodigoTarifa>" + this._funcionesService.strPad(j.path("codigoTarifa").asText(), 2, "0", "STR_PAD_LEFT") + "</CodigoTarifa>";
             xmlString = xmlString + "<Tarifa>" + j.path("tarifa").asText() + "</Tarifa>";
             if (j.path("factorIVA").asText() != null && j.path("factorIVA").asText().length() > 0)
               xmlString = xmlString + "<FactorIVA>" + j.path("factorIVA").asText() + "</FactorIVA>"; 
@@ -263,7 +263,7 @@ public class GeneraXmlImpl implements IGeneraXml {
             if (!tipoDoc.equals("09"))
               if (j.path("exoneracion").path("tipoDocumento").asText() != null && j.path("exoneracion").path("tipoDocumento").asText().length() > 0) {
                 xmlString = xmlString + "<Exoneracion>";
-                xmlString = xmlString + "<TipoDocumento>" + this._funcionesService.str_pad(j.path("exoneracion").path("tipoDocumento").asText(), 2, "0", "STR_PAD_LEFT") + "</TipoDocumento>";
+                xmlString = xmlString + "<TipoDocumento>" + this._funcionesService.strPad(j.path("exoneracion").path("tipoDocumento").asText(), 2, "0", "STR_PAD_LEFT") + "</TipoDocumento>";
                 xmlString = xmlString + "<NumeroDocumento>" + j.path("exoneracion").path("numeroDocumento").asText() + "</NumeroDocumento>";
                 xmlString = xmlString + "<NombreInstitucion>" + procesarTexto(j.path("exoneracion").path("nombreInstitucion").asText()) + "</NombreInstitucion>";
                 xmlString = xmlString + "<FechaEmision>" + j.path("exoneracion").path("fechaEmision").asText() + "</FechaEmision>";
@@ -290,7 +290,7 @@ public class GeneraXmlImpl implements IGeneraXml {
         while (elementsOtrosCargos.hasNext()) {
           JsonNode s = elementsOtrosCargos.next();
           xmlString = xmlString + "<OtrosCargos>";
-          xmlString = xmlString + "<TipoDocumento>" + this._funcionesService.str_pad(s.path("tipoDocumento").asText(), 2, "0", "STR_PAD_LEFT") + "</TipoDocumento>";
+          xmlString = xmlString + "<TipoDocumento>" + this._funcionesService.strPad(s.path("tipoDocumento").asText(), 2, "0", "STR_PAD_LEFT") + "</TipoDocumento>";
           if (s.path("numeroIdentidadTercero") != null && s.path("numeroIdentidadTercero").asText().trim().length() > 0)
             xmlString = xmlString + "<NumeroIdentidadTercero>" + s.path("numeroIdentidadTercero").asText() + "</NumeroIdentidadTercero>"; 
           if (s.path("nombreTercero") != null && s.path("nombreTercero").asText().trim().length() > 0)
@@ -350,7 +350,7 @@ public class GeneraXmlImpl implements IGeneraXml {
           xmlString = xmlString + "<TipoDoc>" + s.path("numero").asText().substring(29, 31) + "</TipoDoc>";
           xmlString = xmlString + "<Numero>" + s.path("numero").asText() + "</Numero>";
           xmlString = xmlString + "<FechaEmision>" + s.path("fechaEmision").asText() + "</FechaEmision>";
-          xmlString = xmlString + "<Codigo>" + this._funcionesService.str_pad(s.path("codigo").asText(), 2, "0", "STR_PAD_LEFT") + "</Codigo>";
+          xmlString = xmlString + "<Codigo>" + this._funcionesService.strPad(s.path("codigo").asText(), 2, "0", "STR_PAD_LEFT") + "</Codigo>";
           xmlString = xmlString + "<Razon>" + procesarTexto(s.path("razon").asText()) + "</Razon>";
           xmlString = xmlString + "</InformacionReferencia>";
         } 
@@ -379,8 +379,8 @@ public class GeneraXmlImpl implements IGeneraXml {
   
   public String GeneraXmlMr(CCampoFactura mr) {
     String xmlString = "";
-    String numeroCedulaEmisor = this._funcionesService.str_pad(mr.getNumeroCedulaEmisor(), 12, "0", "STR_PAD_LEFT");
-    String numeroCedulaReceptor = this._funcionesService.str_pad(mr.getNumeroCedulaReceptor(), 12, "0", "STR_PAD_LEFT");
+    String numeroCedulaEmisor = this._funcionesService.strPad(mr.getNumeroCedulaEmisor(), 12, "0", "STR_PAD_LEFT");
+    String numeroCedulaReceptor = this._funcionesService.strPad(mr.getNumeroCedulaReceptor(), 12, "0", "STR_PAD_LEFT");
     xmlString = xmlString + "<?xml version=\"1.0\" encoding=\"utf-8\"?><MensajeReceptor xmlns=\"https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/mensajeReceptor\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">";
     xmlString = xmlString + "<Clave>" + mr.getClaveDocumentoEmisor() + "</Clave>";
     xmlString = xmlString + "<NumeroCedulaEmisor>" + numeroCedulaEmisor + "</NumeroCedulaEmisor>";
@@ -438,7 +438,7 @@ public class GeneraXmlImpl implements IGeneraXml {
   
   public String procesarTexto(String j) {
     String r = "";
-    r = StringEscapeUtils.escapeXml(j);
+    r = StringEscapeUtils.escapeXml10(j);
     return r;
   }
 }

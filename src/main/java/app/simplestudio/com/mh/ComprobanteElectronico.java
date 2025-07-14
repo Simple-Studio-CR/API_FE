@@ -1,7 +1,5 @@
 package app.simplestudio.com.mh;
 
-import app.simplestudio.com.mh.ObligadoTributario;
-
 public class ComprobanteElectronico {
   private String clave;
   

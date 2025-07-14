@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface IEmisorDao extends CrudRepository<Emisor, Long> {
-  @Query("SELECT e FROM Emisor e WHERE e.identificacion = ?1 AND e.tokenAccess = ?2 AND e.statusEmpresa=1")
+  @Query("SELECT e FROM Emisor e WHERE e.identificacion = ?1 AND e.tokenAccess = ?2 AND e.statusEmpresa=true")
   Emisor findEmisorByIdentificacion(String paramString1, String paramString2);
   
   @Query("SELECT e FROM Emisor e WHERE e.identificacion = ?1")

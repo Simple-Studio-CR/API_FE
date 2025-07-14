@@ -1,0 +1,1110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="facturas" pageWidth="612" pageHeight="792" whenNoDataType="NoPages" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="10" bottomMargin="10" uuid="fba98e60-4921-4134-9e5a-8c341812e86a">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Sample DB"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w1" value="947"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w2" value="40"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="291"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="704"/>
+	<property name="ireport.scriptlethandling" value="0"/>
+	<property name="ireport.encoding" value="UTF-8"/>
+	<property name="net.sf.jasperreports.export.html.embed.image" value="true"/>
+	<property name="net.sf.jasperreports.export.html.convert.svg.to.image" value="true"/>
+	<import value="net.sf.jasperreports.engine.*"/>
+	<import value="java.util.*"/>
+	<import value="net.sf.jasperreports.engine.data.*"/>
+	<parameter name="BASE_URL" class="java.lang.String">
+		<defaultValueExpression><![CDATA["C://Users//jmata//JaspersoftWorkspace//MyReports//"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CLAVE_FACTURA" class="java.lang.String">
+		<defaultValueExpression><![CDATA["50615071900030423027500100001010000003723138458094"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="BASE_URL_LOGO" class="java.lang.String">
+		<defaultValueExpression><![CDATA["https://sinmata.com:8443/sfe-4.3-v4/images/sinmata.png"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="TIPO_DOCUMENTO" class="java.lang.String"/>
+	<parameter name="RESOLUCION" class="java.lang.String">
+		<defaultValueExpression><![CDATA["Autorizada mediante resolución Nº DGT-R-48-2016 del 7 de octubre de 2016"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NOTA_FACTURA" class="java.lang.String"/>
+	<parameter name="URL_QR" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+facturas.id,
+facturas.identificacion,
+facturas.omitir_receptor,
+facturas.receptor_nombre,
+facturas.receptor_tipo_identif,
+facturas.receptor_num_identif,
+(
+CONCAT((SELECT 
+CONCAT(c_provincias.provincia,', ',c_cantones.canton,', ',c_distritos.distrito,', ',IFNULL(c_barrios.barrio,''))
+FROM
+c_provincias
+INNER JOIN c_cantones ON c_cantones.provincia_id = c_provincias.id
+INNER JOIN c_distritos ON c_distritos.canton_id = c_cantones.id
+LEFT JOIN c_barrios ON c_barrios.distrito_id = c_distritos.id
+WHERE c_provincias.id = facturas.receptor_provincia AND
+c_cantones.numero_canton = facturas.receptor_canton AND c_distritos.numero_distrito = facturas.receptor_distrito AND
+c_barrios.numero_barrio = facturas.receptor_barrio),' , ',facturas.receptor_otras_senas)
+) AS direccion_receptor,
+facturas.situacion,
+facturas.terminal,
+facturas.tipo_documento,
+IFNULL(facturas.cod_moneda,'CRC') cod_moneda,
+facturas.cond_venta,
+facturas.medio_pago,
+facturas.otros,
+facturas.plazo_credito,
+facturas.receptor_cod_pais_fax,
+facturas.receptor_cod_pais_tel,
+facturas.receptor_email,
+facturas.receptor_fax AS receptor_fax_a,
+facturas.receptor_tel AS receptor_tel_a,
+CONCAT('+(',facturas.receptor_cod_pais_tel,') ',facturas.receptor_fax) AS receptor_fax_b,
+CONCAT('+(',facturas.receptor_cod_pais_tel,') ',facturas.receptor_tel) AS receptor_tel_b,
+facturas.tipo_cambio,
+facturas.total_comprobante,
+facturas.total_descuentos,
+facturas.total_venta_neta,
+facturas.total_exentos,
+facturas.total_gravados,
+facturas.total_imp,
+facturas.total_merc_exentas,
+facturas.total_merc_gravadas,
+facturas.total_serv_exentos,
+facturas.total_serv_gravados,
+facturas.total_ventas,
+facturas.clave,
+facturas.consecutivo,
+facturas.emisor_fax AS emisor_fax_a,
+facturas.emisor_tel AS emisor_tel_a,
+CONCAT('+(',facturas.emisor_cod_pais_fax,') ',facturas.emisor_fax) AS emisor_fax_b,
+CONCAT('+(',facturas.emisor_cod_pais_tel,') ',facturas.emisor_tel) AS emisor_tel_b,
+facturas.emisor_email,
+facturas.emisor_nombre,
+facturas.emisor_num_identif,
+facturas.emisor_tipo_identif,
+DATE_FORMAT(facturas.fecha_emision,'%d/%m/%Y - %r') fecha_emision,
+facturas.nombre_comercial,
+facturas.numero_factura,
+facturas.medio_pago_2,
+facturas.medio_pago_3,
+facturas.medio_pago_4,
+IFNULL(facturas.total_exonerado,0.00) total_exonerado,
+IFNULL(facturas.total_iva_devuelto,0.00) total_iva_devuelto,
+IFNULL(facturas.total_merc_exonerada,0.00) total_merc_exonerada,
+IFNULL(facturas.total_otros_cargos,0.00) total_otros_cargos,
+IFNULL(facturas.total_serv_exonerado,0.00) total_serv_exonerado,
+facturas.codigo_actividad,
+
+CONCAT(c_provincias.provincia,', ',
+		c_cantones.canton,
+		', ',
+		c_distritos.distrito,
+		', ',
+		IFNULL(c_barrios.barrio,''),
+		', ',
+		emisores.otras_senas 
+	) AS direccion_emisor,
+
+emisores.detalle_en_factura1,
+emisores.detalle_en_factura2,
+c_condicion_de_venta.condicion_venta,
+c_medios_de_pago.medio_de_pago
+FROM
+facturas
+LEFT JOIN c_provincias ON c_provincias.id = facturas.emisor_prov
+LEFT JOIN c_cantones ON c_cantones.numero_canton = facturas.emisor_canton AND c_cantones.provincia_id = c_provincias.id
+LEFT JOIN c_distritos ON c_distritos.numero_distrito = facturas.emisor_distrito AND c_distritos.canton_id = c_cantones.id
+LEFT JOIN c_barrios ON c_barrios.numero_barrio = facturas.emisor_barrio AND c_barrios.distrito_id = c_distritos.id
+LEFT JOIN emisores ON emisores.identificacion = facturas.identificacion
+LEFT JOIN c_condicion_de_venta ON c_condicion_de_venta.id = facturas.cond_venta
+LEFT JOIN c_medios_de_pago ON c_medios_de_pago.id = facturas.medio_pago
+
+WHERE
+facturas.clave =  $P{CLAVE_FACTURA}]]>
+	</queryString>
+	<field name="id" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="identificacion" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="identificacion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="omitir_receptor" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="omitir_receptor"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_nombre" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_nombre"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_tipo_identif" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_tipo_identif"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_num_identif" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_num_identif"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="direccion_receptor" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="direccion_receptor"/>
+	</field>
+	<field name="situacion" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="situacion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="terminal" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="terminal"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="tipo_documento" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="tipo_documento"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="cod_moneda" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="cod_moneda"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="cond_venta" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="cond_venta"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="medio_pago" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="medio_pago"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="otros" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="otros"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="plazo_credito" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="plazo_credito"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_cod_pais_fax" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_cod_pais_fax"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_cod_pais_tel" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_cod_pais_tel"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_email" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_email"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_fax_a" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_fax_a"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_tel_a" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_tel_a"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="receptor_fax_b" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_fax_b"/>
+	</field>
+	<field name="receptor_tel_b" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="receptor_tel_b"/>
+	</field>
+	<field name="tipo_cambio" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="tipo_cambio"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_comprobante" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_comprobante"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_descuentos" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_descuentos"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_venta_neta" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_venta_neta"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_exentos" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_exentos"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_gravados" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_gravados"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_imp" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_imp"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_merc_exentas" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_merc_exentas"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_merc_gravadas" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_merc_gravadas"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_serv_exentos" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_serv_exentos"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_serv_gravados" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_serv_gravados"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_ventas" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_ventas"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="clave" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="clave"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="consecutivo" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="consecutivo"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="emisor_fax_a" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_fax_a"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="emisor_tel_a" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_tel_a"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="emisor_fax_b" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_fax_b"/>
+	</field>
+	<field name="emisor_tel_b" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_tel_b"/>
+	</field>
+	<field name="emisor_email" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_email"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="emisor_nombre" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_nombre"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="emisor_num_identif" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_num_identif"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="emisor_tipo_identif" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_tipo_identif"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="fecha_emision" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="fecha_emision"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="nombre_comercial" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="nombre_comercial"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="numero_factura" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="numero_factura"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="medio_pago_2" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="medio_pago_2"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="medio_pago_3" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="medio_pago_3"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="medio_pago_4" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="medio_pago_4"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_exonerado" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_exonerado"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_iva_devuelto" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_iva_devuelto"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_merc_exonerada" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_merc_exonerada"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="total_otros_cargos" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_otros_cargos"/>
+	</field>
+	<field name="total_serv_exonerado" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="total_serv_exonerado"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="codigo_actividad" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="codigo_actividad"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="direccion_emisor" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="direccion_emisor"/>
+	</field>
+	<field name="detalle_en_factura1" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="detalle_en_factura1"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="detalle_en_factura2" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="detalle_en_factura2"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="condicion_venta" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="condicion_venta"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="c_condicion_de_venta"/>
+	</field>
+	<field name="medio_de_pago" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="medio_de_pago"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="c_medios_de_pago"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band height="196" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="0" y="84" width="571" height="15" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="545e50e5-f8f3-4883-86bf-9eae660a12b7"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_nombre}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="52" y="113" width="220" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="024d237c-8dfa-44ff-805b-c24d19e74457"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_email}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="159" y="125" width="72" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="184f0a5a-c7ed-4775-824f-edf0497bd06b">
+					<printWhenExpression><![CDATA[$F{emisor_fax_a}.trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_fax_b}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="52" y="101" width="220" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="71a26466-d20a-4b7b-aed6-c6a69af862cf"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_num_identif}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="52" y="125" width="82" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="0b45cf19-aa52-4d75-8b3b-4cba4bc3fbb5"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_tel_b}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="52" y="137" width="316" height="20" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="f60f496e-f08a-4ca7-a880-a2aaba2673f0"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{direccion_emisor}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="137" y="125" width="22" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="4278192c-022b-4bae-aa95-512c3955be32">
+					<printWhenExpression><![CDATA[$F{emisor_fax_a}.trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fax:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="311" y="4" width="260" height="15" uuid="d6d80aa2-34a7-4721-8db8-5e4ae5f3ce04"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{clave}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="281" y="4" width="30" height="15" uuid="e9a3b3b3-c53a-4f94-be82-4a7941ec66e2"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Clave:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="463" y="20" width="108" height="15" uuid="fa1afdad-5b79-418c-89ae-e07967cb61de"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{consecutivo}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="453" y="101" width="118" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="69ec4af2-979a-48d9-8ef6-c8a26011675f"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{fecha_emision}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="403" y="20" width="60" height="15" uuid="51003b84-5660-448c-8a3a-9983877eecf2"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Consecutivo:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="368" y="101" width="84" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="5bad9a68-5fec-4da3-ba8e-80ab7c1e4ba0"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fecha de Emisión:]]></text>
+			</staticText>
+			<image vAlign="Middle">
+				<reportElement key="image" x="0" y="0" width="181" height="75" uuid="996f2a69-f738-4fa9-9a3d-99603c006ee9"/>
+				<imageExpression><![CDATA[""+$P{BASE_URL_LOGO}+""]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="53" y="162" width="518" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="bdaa71cb-3d46-426a-b70d-1f8c65ce2939">
+					<printWhenExpression><![CDATA[$F{receptor_nombre} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{receptor_nombre}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="0" y="162" width="52" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="2c2a1bf9-3d17-48e9-a5ce-794ec5f29089">
+					<printWhenExpression><![CDATA[$F{receptor_nombre} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Receptor:]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="53" y="184" width="518" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="5cb1d477-95df-4e51-842d-7451382146e7">
+					<printWhenExpression><![CDATA[$F{direccion_receptor} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{direccion_receptor}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="0" y="184" width="52" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="d4030d12-660c-425f-be88-ae24b2b68894">
+					<printWhenExpression><![CDATA[$F{direccion_receptor} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dirección:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="0" y="173" width="52" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="0a837f32-1e8d-4036-929e-863fbf11599f">
+					<printWhenExpression><![CDATA[$F{receptor_num_identif} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[No. Id:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="233" y="173" width="196" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="d8b8663e-0b93-45b8-a715-c9ef4519f2c2">
+					<printWhenExpression><![CDATA[$F{receptor_nombre} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{receptor_email}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="430" y="173" width="45" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="629820f5-ffa2-437d-a0dd-c96cb4338d6e">
+					<printWhenExpression><![CDATA[$F{receptor_tel_a} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Teléfono:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="194" y="173" width="37" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="97657a9b-e441-4ab4-befa-5de10f736be5">
+					<printWhenExpression><![CDATA[$F{receptor_email} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Correo:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="475" y="173" width="96" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="fd343be0-9453-4ca2-85c8-e5c8c79e3958">
+					<printWhenExpression><![CDATA[$F{receptor_tel_a} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{receptor_tel_b}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement key="line" positionType="Float" x="0" y="159" width="572" height="1" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" forecolor="#293674" uuid="1ac25346-e3fc-4874-b6a6-42c70ff6e8e3">
+					<printWhenExpression><![CDATA[$F{receptor_nombre} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+			</line>
+			<line>
+				<reportElement key="line" x="0" y="79" width="571" height="1" forecolor="#293674" uuid="370e60f7-52d7-4290-aec5-465c52dfb249"/>
+			</line>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" x="233" y="49" width="338" height="20" uuid="47ec4928-fb31-4d93-94d5-13ce4f4610d6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{TIPO_DOCUMENTO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" x="53" y="173" width="140" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="5cacadb3-2a82-4afe-b58d-b0611c5a7fbf">
+					<printWhenExpression><![CDATA[$F{receptor_nombre} .trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{receptor_num_identif}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="0" y="125" width="50" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="2f72461f-fdc0-4f64-9f1e-f5226e525bb3"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Teléfono:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" x="453" y="113" width="118" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="dc509100-ec71-4250-ae05-ad2a12d835bf"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{condicion_venta}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" x="453" y="125" width="118" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="e556360c-d633-4dfa-92c7-889365101d72"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{medio_de_pago}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="368" y="113" width="84" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="3af18361-10ea-4419-ba92-99f32fd0da2a"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Condición venta:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="368" y="125" width="84" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="0d6e9b15-99a1-42ef-a93a-10ee759e5c72"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Medio pago:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="0" y="101" width="50" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="010552c6-90a7-47b5-a602-b792c54ed2ba"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[No. Id:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="0" y="113" width="50" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="9a45b227-62c7-4504-ab3b-dfc9b6430771"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Correo:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="0" y="137" width="50" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="7a05202a-90b5-47b4-a973-2fe2821d4b10"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dirección:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" x="453" y="149" width="118" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="5ad1243b-fdf2-4448-b4ca-1c46e8532a78">
+					<printWhenExpression><![CDATA[$F{cond_venta} .trim().equals("02")?Boolean.TRUE:Boolean.FALSE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{plazo_credito}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="368" y="149" width="84" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="3e2bcd26-e887-4104-9095-6019b6d79159">
+					<printWhenExpression><![CDATA[$F{cond_venta} .trim().equals("02")?Boolean.TRUE:Boolean.FALSE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Plazo de crédito:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" x="403" y="35" width="60" height="15" uuid="0d10f0af-429c-47e9-b5b8-6edd8a4044de">
+					<printWhenExpression><![CDATA[$F{numero_factura}.trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Factura N.:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="463" y="35" width="108" height="15" uuid="c9f5ea39-b164-492e-afd9-187fa9cbee1e">
+					<printWhenExpression><![CDATA[$F{numero_factura}.trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{numero_factura}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" x="453" y="137" width="118" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="e3f05d9c-2526-4a24-89a6-f4efe3584fd4"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["₡"+$F{tipo_cambio}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="368" y="137" width="84" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="6fce59f9-4bcb-488b-977a-1f7048e6cfbf"/>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tipo de cambio:]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<subreport isUsingCache="true">
+				<reportElement key="subreport" positionType="Float" x="-20" y="3" width="612" height="17" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="a60ce607-5a6b-417e-a693-c3bdd6389b3e"/>
+				<subreportParameter name="FACTURA_ID">
+					<subreportParameterExpression><![CDATA[$F{id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{BASE_URL} + "detalle_factura.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="27" splitType="Stretch">
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="0" y="13" width="572" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="909e3661-b685-4a32-abf7-7da81eebfed9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="7" isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{RESOLUCION}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="460" y="13" width="80" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" forecolor="#000000" uuid="37fd98d3-5f0e-487b-b06b-5d046d154ee2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="540" y="13" width="30" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" forecolor="#FFFFFF" uuid="92b3a503-1723-4293-80ef-342220daabce"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" de " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" x="0" y="2" width="571" height="8" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="df3baf53-db63-4eae-930a-08668ecf205f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{detalle_en_factura2}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="163" splitType="Stretch">
+			<staticText>
+				<reportElement key="staticText" positionType="Float" mode="Transparent" x="342" y="121" width="110" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="115bc7cf-489b-4016-be49-90e0461a3b1b"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total comprobante:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" mode="Transparent" x="342" y="93" width="110" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="b0b4f6cf-2d8c-45bb-ad9a-aeedfe4963cd"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Total impuestos:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" mode="Transparent" x="342" y="79" width="110" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="fdb3a8b5-b9dd-4137-b783-89e76f4dfbf1"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Total venta neta:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" mode="Transparent" x="342" y="65" width="110" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="f2db6013-5dff-4474-90eb-100752dc9b2d"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Total descuentos:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" mode="Opaque" x="342" y="37" width="110" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="364999d4-0c1a-4dee-b427-84d375817eb7"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Total venta:]]></text>
+			</staticText>
+			<textField pattern="#,##0.00#" isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="492" y="79" width="80" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="3122cd5e-c209-481e-9a78-a3bcddf95abd"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{total_venta_neta})]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#" isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="492" y="65" width="80" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="af87bc91-85d2-4af9-9cd2-b21a45caab0e"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{total_descuentos})]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#" isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Opaque" x="492" y="37" width="80" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="edc0e177-424f-42bd-a5e8-2c219a661df8"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{total_ventas})]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#" isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="492" y="121" width="80" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="c03e1fba-c526-49e2-b04d-9706ab9ec492"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{total_comprobante})]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#" isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="492" y="93" width="80" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="b82598e1-e9ad-4d71-9f07-c0aadbad665c"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{total_imp})]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement key="rectangle" positionType="Float" x="342" y="16" width="250" height="20" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" forecolor="#293674" backcolor="#293674" uuid="8f3497f5-1b2a-49c2-b180-861ef6a29e3e"/>
+			</rectangle>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="392" y="16" width="130" height="20" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" forecolor="#FFFFFF" uuid="bf763261-8540-4eec-b6aa-1166d33c271d"/>
+				<box>
+					<pen lineWidth="0.0" lineStyle="Solid" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#293674"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#293674"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#293674"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#293674"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Montos Totales]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement key="rectangle" positionType="Float" x="-20" y="16" width="349" height="20" forecolor="#293674" backcolor="#293674" uuid="432d35b4-8f00-46f1-ae39-2f9b62114fd6"/>
+			</rectangle>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" x="45" y="16" width="229" height="20" forecolor="#FFFFFF" uuid="38b1451d-3939-496b-bbce-24ac7c83a60c"/>
+				<box>
+					<pen lineWidth="1.0" lineStyle="Solid" lineColor="#293674"/>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#293674"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#293674"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#293674"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#293674"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Observaciones]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="0" y="38" width="329" height="15" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="d32a9a26-38c6-43d9-af2d-188f9781441d"/>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{NOTA_FACTURA}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Opaque" x="452" y="37" width="40" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="f1b68fab-aaea-43fe-a959-0c2b5a3e269d"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cod_moneda} != "" ? $F{cod_moneda} :  "CRC"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="452" y="65" width="40" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="284f74ab-55a2-48e4-a48c-4d093ed63b82"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cod_moneda} != "" ? $F{cod_moneda} :  "CRC"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="452" y="79" width="40" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="86c6a6ea-f22f-4480-b48f-abde808a1753"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cod_moneda} != "" ? $F{cod_moneda} :  "CRC"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="452" y="93" width="40" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="25733c1f-5446-46e9-83c0-3017a911088e"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cod_moneda} != "" ? $F{cod_moneda} :  "CRC"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="452" y="121" width="40" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="8039ac43-a789-44a4-9240-4188a0b4754e"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cod_moneda} != "" ? $F{cod_moneda} :  "CRC"]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement key="line" x="0" y="3" width="572" height="1" forecolor="#4D4C4C" uuid="83e78688-add3-485f-9637-7cd0e330d4ce"/>
+			</line>
+			<image>
+				<reportElement key="image" positionType="Float" x="0" y="71" width="89" height="89" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="74206c97-3947-4a86-bf97-29f8349026d8"/>
+				<imageExpression><![CDATA[com.google.zxing.client.j2se.MatrixToImageWriter.toBufferedImage(
+new com.google.zxing.qrcode.QRCodeWriter().encode(
+$P{URL_QR},
+com.google.zxing.BarcodeFormat.QR_CODE, 300, 300))]]></imageExpression>
+			</image>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="0" y="54" width="329" height="15" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="00b238ff-3d1a-4c03-8e78-d2f4da254a15"/>
+				<textElement>
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{detalle_en_factura1}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="452" y="51" width="40" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="ee2b6afb-8fee-4dba-b444-6e1788655981"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cod_moneda} != "" ? $F{cod_moneda} :  "CRC"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" mode="Transparent" x="342" y="51" width="110" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="99789da5-fa7d-4566-bf6c-b0897cc7b085"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Total exonerado:]]></text>
+			</staticText>
+			<textField pattern="#,##0.00#" isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="492" y="51" width="80" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="c3e2dcba-ba0f-402e-86c3-e720e992dcdc"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{total_exonerado})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="452" y="107" width="40" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="b804c315-6be5-4c33-9fdc-4f87f27edaa8"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cod_moneda} != "" ? $F{cod_moneda} :  "CRC"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" positionType="Float" mode="Transparent" x="342" y="107" width="110" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="c7b6e437-5d15-4608-a3a5-4aace477671c"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Total otros cargos:]]></text>
+			</staticText>
+			<textField pattern="#,##0.00#" isBlankWhenNull="false">
+				<reportElement key="textField" positionType="Float" mode="Transparent" x="492" y="107" width="80" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" backcolor="#FFFFFF" uuid="570bba8b-d1ad-4eb5-96dd-4f228d2279b3"/>
+				<box>
+					<pen lineWidth="0.01" lineColor="#293674"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{total_otros_cargos})]]></textFieldExpression>
+			</textField>
+			<subreport isUsingCache="true">
+				<reportElement key="subreport" positionType="Float" x="-20" y="5" width="612" height="4" uuid="e579af77-a883-452b-946f-1142fe54c3b4"/>
+				<subreportParameter name="FACTURA_ID">
+					<subreportParameterExpression><![CDATA[$F{id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{BASE_URL} + "otros_cargos.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport isUsingCache="true">
+				<reportElement key="subreport" positionType="Float" x="-20" y="9" width="612" height="4" uuid="3149b4e9-d473-4e2c-aee8-4dfae1f3c0eb">
+					<printWhenExpression><![CDATA[Double.parseDouble($F{total_exonerado}) > 0 ?Boolean.TRUE:Boolean.FALSE]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="FACTURA_ID">
+					<subreportParameterExpression><![CDATA[$F{id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{BASE_URL} + "exoneracion_factura.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</summary>
+</jasperReport>

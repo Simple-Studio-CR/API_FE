@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.13.0.final using JasperReports Library version 6.13.0-46ada4d1be8f3c5985fd0b6146f3ed44caed6f05  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="exoneracion_factura" pageWidth="216" pageHeight="792" columnWidth="216" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isIgnorePagination="true" uuid="09a92c7b-ea6a-46ef-b550-d7dd8f170c42">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="API_4.3.xml"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w1" value="620"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w2" value="369"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="239"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="755"/>
+	<property name="net.sf.jasperreports.export.pdf.compressed" value="true"/>
+	<parameter name="FACTURA_ID" class="java.lang.String" nestedType="java.lang.String">
+		<parameterDescription><![CDATA[Número de factura]]></parameterDescription>
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+fe_facturas_items_impuestos_exoneraciones.id,
+fe_facturas_items_impuestos_exoneraciones.fecha_emision,
+Sum(fe_facturas_items_impuestos_exoneraciones.monto_impuesto) AS monto_exoneracion,
+fe_facturas_items_impuestos_exoneraciones.nombre_institucion,
+fe_facturas_items_impuestos_exoneraciones.numero_documento,
+fe_facturas_items_impuestos_exoneraciones.porcentaje_compra porcentaje_exoneracion,
+fe_facturas_items_impuestos_exoneraciones.tipo_documento,
+fe_facturas_items_impuestos_exoneraciones.impuestos_item_factura_id,
+c_tipo_documento_de_exoneracion_o_autorizacion.exoneracion_o_autorizacion
+FROM
+fe_facturas_items
+INNER JOIN fe_facturas_items_impuestos ON fe_facturas_items_impuestos.item_factura_id = fe_facturas_items.id
+INNER JOIN fe_facturas_items_impuestos_exoneraciones ON fe_facturas_items_impuestos_exoneraciones.impuestos_item_factura_id = fe_facturas_items_impuestos.id AND fe_facturas_items_impuestos_exoneraciones.impuestos_item_factura_id = fe_facturas_items_impuestos.id
+INNER JOIN c_tipo_documento_de_exoneracion_o_autorizacion ON c_tipo_documento_de_exoneracion_o_autorizacion.id = fe_facturas_items_impuestos_exoneraciones.tipo_documento
+
+WHERE
+fe_facturas_items.factura_id =  $P{FACTURA_ID}]]>
+	</queryString>
+	<field name="id" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="fecha_emision" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="fecha_emision"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="monto_exoneracion" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.label" value="monto_exoneracion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="nombre_institucion" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="nombre_institucion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="numero_documento" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="numero_documento"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="porcentaje_exoneracion" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.label" value="porcentaje_exoneracion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="tipo_documento" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="tipo_documento"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="impuestos_item_factura_id" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="impuestos_item_factura_id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_facturas_items_impuestos_exoneraciones"/>
+	</field>
+	<field name="exoneracion_o_autorizacion" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="exoneracion_o_autorizacion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="c_tipo_documento_de_exoneracion_o_autorizacion"/>
+	</field>
+	<pageHeader>
+		<band height="125" splitType="Stretch">
+			<staticText>
+				<reportElement x="20" y="4" width="176" height="12" forecolor="#000000" backcolor="#293674" uuid="70e8a04b-b24c-48dd-9450-8b422bdc57f7">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tipo de exoneración exoneración]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="20" y="76" width="176" height="12" forecolor="#000000" backcolor="#293674" uuid="5acd74d6-b8e7-4b77-9d25-8a85e7a34429">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fecha emsión documento de exoneración]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="20" y="28" width="176" height="12" forecolor="#000000" backcolor="#293674" uuid="25547950-d7bf-463b-a1c8-427a1afac3ef">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Número de documento de exoneración]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="20" y="52" width="176" height="12" forecolor="#000000" backcolor="#293674" uuid="78f11535-2f96-4bbc-b8d1-e00f245b1fe5">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Institución que exonera]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="20" y="100" width="176" height="12" forecolor="#000000" backcolor="#293674" uuid="2a587740-d78f-4af9-bb49-ce9d45d4e42a">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Impuesto exonerado]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="20" y="16" width="176" height="12" uuid="c11f092d-cb55-45e2-883e-a06651eb9ffa">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{exoneracion_o_autorizacion}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="20" y="40" width="176" height="12" uuid="32292b79-67a8-44ba-9b19-08b62f6115d4">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{numero_documento}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="20" y="64" width="176" height="12" uuid="f25f6883-b44f-4e3f-bda3-80534c88d9ca">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nombre_institucion}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="20" y="88" width="176" height="12" uuid="323de5d6-6839-4ae1-b5d3-a7710b39de2c">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{fecha_emision}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" pattern="#,##0.00#" isBlankWhenNull="true">
+				<reportElement x="20" y="112" width="176" height="12" uuid="e82cf9f0-d165-4cec-97db-d2c5f43b2740">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{monto_exoneracion})]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="21" y="1" width="176" height="1" uuid="c6da4867-5451-4759-96c0-1c32b7e91873">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted"/>
+				</graphicElement>
+			</line>
+		</band>
+	</pageHeader>
+</jasperReport>
