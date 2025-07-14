@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.13.0.final using JasperReports Library version 6.13.0-46ada4d1be8f3c5985fd0b6146f3ed44caed6f05  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="reciboCXC" pageWidth="215" pageHeight="708" whenNoDataType="NoPages" columnWidth="185" leftMargin="15" rightMargin="15" topMargin="10" bottomMargin="10" isFloatColumnFooter="true" isIgnorePagination="true" uuid="8ba3ed60-3849-4ce9-a518-124f45a3b99e">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="API_4.3.xml"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="ireport.scriptlethandling" value="0"/>
+	<property name="ireport.encoding" value="UTF-8"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w1" value="947"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w2" value="40"/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.topMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.bottomMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.leftMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<import value="java.util.*"/>
+	<import value="net.sf.jasperreports.engine.data.*"/>
+	<import value="net.sf.jasperreports.engine.*"/>
+	<parameter name="CXC_ID" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+fe_factura_registro_pagos_cxc.id,
+fe_factura_registro_pagos_cxc.numero_cxc,
+fe_factura_registro_pagos_cxc.cliente_id,
+fe_factura_registro_pagos_cxc.emisor_id,
+fe_factura_registro_pagos_cxc.user_id,
+DATE_FORMAT(fe_factura_registro_pagos_cxc.fecha_registro_pago,'%d/%m/%Y - %r') AS fecha_emision,
+fe_factura_registro_pagos_cxc.monto_abondo,
+fe_factura_registro_pagos_cxc.numero_tarjeta,
+fe_factura_registro_pagos_cxc.num_documento,
+fe_factura_registro_pagos_cxc.numero_autorizacion,
+fe_factura_registro_pagos_cxc.monto_actual,
+fe_factura_registro_pagos_cxc.monto_actual - fe_factura_registro_pagos_cxc.monto_abondo AS saldo_documento,
+emisores.codigo_pais,
+emisores.email AS emisor_email,
+emisores.fax AS emisor_fax_a,
+emisores.identificacion AS emisor_num_identif,
+emisores.nombre_razon_social,
+emisores.nombre_comercial AS emisor_nombre,
+CONCAT( '+(', emisores.codigo_pais, ') ', emisores.fax ) AS emisor_fax_b,
+CONCAT( '+(', emisores.codigo_pais, ') ', emisores.telefono ) AS emisor_tel_b,
+CONCAT(c_provincias.provincia,', ',
+		c_cantones.canton,
+		', ',
+		c_distritos.distrito,
+		', ',
+		IFNULL(c_barrios.barrio,''),
+		', ',
+		emisores.otras_senas 
+	) AS direccion_emisor,
+c_medios_de_pago.medio_de_pago,
+c_clientes.identificacion AS identificacion_cliente,
+c_clientes.nombre_completo,
+fe_factura_cxc.numero_factura
+FROM
+fe_factura_registro_pagos_cxc
+LEFT JOIN emisores ON fe_factura_registro_pagos_cxc.emisor_id = emisores.id
+INNER JOIN c_provincias ON emisores.provincia_id = c_provincias.id
+INNER JOIN c_cantones ON c_cantones.id = emisores.canton_id
+INNER JOIN c_distritos ON c_distritos.id = emisores.distrito_id
+LEFT JOIN c_barrios ON c_barrios.id = emisores.barrio_id
+INNER JOIN c_clientes ON fe_factura_registro_pagos_cxc.cliente_id = c_clientes.id
+INNER JOIN c_medios_de_pago ON fe_factura_registro_pagos_cxc.medio_de_pago = c_medios_de_pago.id
+INNER JOIN fe_factura_cxc ON fe_factura_cxc.id = fe_factura_registro_pagos_cxc.factura_cxc_id
+
+	WHERE
+fe_factura_registro_pagos_cxc.id =  $P{CXC_ID}]]>
+	</queryString>
+	<field name="id" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="numero_cxc" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="numero_cxc"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="cliente_id" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="cliente_id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="emisor_id" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="user_id" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="user_id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="fecha_emision" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="fecha_emision"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="facturas"/>
+	</field>
+	<field name="monto_abondo" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.label" value="monto_abondo"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="numero_tarjeta" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="numero_tarjeta"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="num_documento" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="num_documento"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="numero_autorizacion" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="numero_autorizacion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="monto_actual" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.label" value="monto_actual"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_registro_pagos_cxc"/>
+	</field>
+	<field name="saldo_documento" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.label" value="saldo_documento"/>
+	</field>
+	<field name="codigo_pais" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="codigo_pais"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="emisor_email" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_email"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="emisor_fax_a" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_fax_a"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="emisor_num_identif" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_num_identif"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="nombre_razon_social" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="nombre_razon_social"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="emisor_nombre" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_nombre"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="emisores"/>
+	</field>
+	<field name="emisor_fax_b" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_fax_b"/>
+	</field>
+	<field name="emisor_tel_b" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="emisor_tel_b"/>
+	</field>
+	<field name="direccion_emisor" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="direccion_emisor"/>
+	</field>
+	<field name="medio_de_pago" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="medio_de_pago"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="c_medios_de_pago"/>
+	</field>
+	<field name="identificacion_cliente" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="identificacion_cliente"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="c_clientes"/>
+	</field>
+	<field name="nombre_completo" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="nombre_completo"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="c_clientes"/>
+	</field>
+	<field name="numero_factura" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.label" value="numero_factura"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="fe_factura_cxc"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="239" splitType="Stretch">
+			<property name="com.jaspersoft.studio.layout"/>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" x="0" y="62" width="185" height="30" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="1eaaa9a3-92ca-4939-b7d3-74228bc74027"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{direccion_emisor}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="0" y="165" width="60" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="715e6ffb-a346-4164-bc21-703da94352a6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Medio pago:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="105" width="185" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="5e9fd1fa-c9f5-49ac-84da-cefde0c5e6c4"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["ABONO A CUENTA POR COBRAR"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="0" y="18" width="185" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="dd14f5bb-b7bc-4fd8-a1d2-02e719b40872"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_num_identif}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="0" y="51" width="185" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="2d805633-80ff-423e-9cc2-ec5586384b9c">
+					<printWhenExpression><![CDATA[$F{emisor_fax_a}.trim().equals("")?Boolean.FALSE:Boolean.TRUE]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Fax:" + $F{emisor_fax_b}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement key="textField" positionType="Float" x="0" y="0" width="185" height="17" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="74cfde71-fdf5-4f3d-9973-a318615941fc"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_nombre}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="87" y="117" width="98" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="81dc006a-f8a8-4383-82bb-49cada9b09a0"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{fecha_emision}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="0" y="29" width="185" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="c4f85bac-df7f-4d89-a884-2343a734de3e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{emisor_email}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="0" y="40" width="185" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="d4e77705-63d6-4fb4-b472-48fe621fa709"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Tel: " + $F{emisor_tel_b}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="0" y="117" width="87" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="86a2137b-4a61-410d-a034-c4f7441e7694"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fecha de Emisión:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="60" y="165" width="125" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="58321a5d-b0d8-49db-af42-51a5e428e9cf"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{medio_de_pago}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="39" y="141" width="146" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="30d4bbe8-62fe-4511-a405-f23b3ec98e7f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nombre_completo}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="0" y="141" width="39" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="1ef7d098-50fe-46a3-8813-aa8c38b6eb67"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cliente:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="66" y="153" width="119" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="50dd3a68-e571-42c0-931d-5b8b72f34006"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{identificacion_cliente}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="0" y="153" width="66" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="6dd20508-cd95-40e0-8751-5aea08cf2928"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Identificación:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="52" y="129" width="133" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="bd216686-a7cc-4e5b-9293-96bd07076aca"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{numero_cxc}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="0" y="129" width="52" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="71809cbd-175b-4e6e-91f4-d9adfa22e44c"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Recibo #:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement key="textField" x="0" y="199" width="49" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="b3046614-3742-442a-978b-15487297cdd0"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{numero_factura}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="0" y="189" width="49" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="c0a217f4-3946-4afa-b8ea-ce4df1a9dc01"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cuenta]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" x="58" y="189" width="65" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="55dce589-190e-4cad-8bab-1513d55bb8c1"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[M.Abonado]]></text>
+			</staticText>
+			<textField pattern="#,##0.00#" isBlankWhenNull="true">
+				<reportElement key="textField" x="58" y="199" width="65" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="37dd00d8-779e-4ff0-8d72-b67e1816546a"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{monto_abondo})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText" x="131" y="189" width="54" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="2930a9aa-7ca6-42e4-a23d-61557d18e770"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Saldo]]></text>
+			</staticText>
+			<textField pattern="#,##0.00#" isBlankWhenNull="true">
+				<reportElement key="textField" x="131" y="199" width="54" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="ca0f46a4-856c-4cc2-805f-92040ff14d08"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf($F{saldo_documento})]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="218" width="185" height="10" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" uuid="2038c369-6df9-4d5d-b21d-709ea4452a58"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["** GRACIAS POR SU PREFERENCIA **"]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="98" width="185" height="1" uuid="76990314-7d39-4f73-8505-b84d78c9da3f"/>
+				<graphicElement>
+					<pen lineStyle="Dotted"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="1" y="181" width="185" height="1" uuid="21569bf2-d4ce-416f-90cf-57ffc9435947"/>
+				<graphicElement>
+					<pen lineStyle="Dotted"/>
+				</graphicElement>
+			</line>
+		</band>
+	</detail>
+</jasperReport>

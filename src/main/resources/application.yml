@@ -1,0 +1,67 @@
+spring:
+  # … lo que ya tenías …
+  datasource:
+    url: jdbc:mysql://64.225.6.44:3306/samyx_prod?allowPublicKeyRetrieval=true&useSSL=false&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=America/Costa_Rica
+    username: sammy
+    password: _NHrX37=%#wV
+  jpa:
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.MySQLDialect
+  jmx:
+    default-domain: "API FE Samyx v1.0"
+  mail:
+    host: smtp.gmail.com
+    port: 465
+    username: fe@samyx.digital
+    password: hgctqnepsmaulkkz
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: false
+            required: false
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+    debug: true
+
+server:
+  port: 8080
+
+correo:
+  de:
+    distribucion: fe@samyx.digital
+  no:
+    reply: fe@samyx.digital
+
+path:
+  upload:
+    files:
+      api: /home/XmlClientes/
+
+endpoint:
+  prod: https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/
+  stag: https://api.comprobanteselectronicos.go.cr/recepcion-sandbox/v1/recepcion/
+
+token:
+  prod: https://idp.comprobanteselectronicos.go.cr/auth/realms/rut/protocol/openid-connect/
+  stag: https://idp.comprobanteselectronicos.go.cr/auth/realms/rut-stag/protocol/openid-connect/
+
+url:
+  qr: ""
+
+cloud:
+  aws:
+    credentials:
+      access-key: DO00KMVVA2PCDAP6B6AV
+      secret-key: 6YFkfXRk1+c+V1RU9gClD61O9ccEn+emEGwZHatNa2g
+    s3:
+      bucket: ssn.soluciones
+      endpoint: https://nyc3.digitaloceanspaces.com
+      region: nyc3
+      prefix: XmlClientes
+      url: https://nyc3.digitaloceanspaces.com/ssn.soluciones
