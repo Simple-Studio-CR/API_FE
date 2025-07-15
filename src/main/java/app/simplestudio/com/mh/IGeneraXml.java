@@ -1,5 +1,7 @@
 package app.simplestudio.com.mh;
 
+import app.simplestudio.com.mh.CCampoFactura;
+
 public interface IGeneraXml {
   String GeneraXml(CCampoFactura paramCCampoFactura);
   

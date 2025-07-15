@@ -1,5 +1,7 @@
 package app.simplestudio.com.mh;
 
+import app.simplestudio.com.mh.ObligadoTributario;
+
 public class MensajeReceptorMh {
   private String clave;
   

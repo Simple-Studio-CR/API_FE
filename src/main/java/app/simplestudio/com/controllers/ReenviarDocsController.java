@@ -14,14 +14,17 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.util.ByteArrayDataSource;
+import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import javax.mail.util.ByteArrayDataSource;
 import javax.sql.DataSource;
+import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,7 +57,7 @@ public class ReenviarDocsController {
   private String correoDistribucion;
   
   @RequestMapping(value = {"/reenviar-xmls"}, method = {RequestMethod.POST}, consumes = {"application/json"}, produces = {"application/json"})
-  public String sendXmlAndPdf(@RequestBody String j) throws IOException, SQLException {
+  public String sendXmlAndPdf(@RequestBody String j) throws JRException, IOException, SQLException, MessagingException {
     ObjectMapper objectMapper = new ObjectMapper();
     JsonNode m = objectMapper.readTree(j);
     String clave = m.path("clave").asText();
@@ -65,7 +68,7 @@ public class ReenviarDocsController {
     URL base = getClass().getResource("/");
     String baseUrl = base.toString();
     try {
-      if (clave != null && clave.length() == 50 && email != null && !email.isEmpty()) {
+      if (clave != null && clave.length() == 50 && email != null && email.length() > 0) {
         ComprobantesElectronicos ce = this._comprobantesElectronicosService.findByClave(clave);
         if (ce != null) {
           if (ce.getIndEstado() != null && ce.getIndEstado().equals("aceptado")) {
@@ -73,7 +76,7 @@ public class ReenviarDocsController {
             Emisor e = this._emisorService.findEmisorOnlyIdentificacion(ce.getIdentificacion());
             String td = tipoDocumento(ce.getTipoDocumento());
             String logo = e.getLogoEmpresa();
-            if (logo != null && !logo.isEmpty()) {
+            if (logo != null && !logo.equals("") && logo.length() > 0) {
               logo = this.pathUploadFilesApi + "logo/" + logo;
             } else {
               logo = this.pathUploadFilesApi + "logo/default.png";
@@ -105,9 +108,9 @@ public class ReenviarDocsController {
               String file2 = this.pathUploadFilesApi + ce.getIdentificacion() + "/" + clave + "-factura-sign.xml";
               FileSystemResource file_1 = new FileSystemResource(new File(file1));
               FileSystemResource file_2 = new FileSystemResource(new File(file2));
-              helper.addAttachment(clave + "-respuesta-mh.xml", file_1, "application/xml");
-              helper.addAttachment(clave + "-factura-sign.xml", file_2, "application/xml");
-              helper.addAttachment(clave + "-factura.pdf", pdfBytes);
+              helper.addAttachment("" + clave + "-respuesta-mh.xml", (InputStreamSource)file_1, "application/xml");
+              helper.addAttachment("" + clave + "-factura-sign.xml", (InputStreamSource)file_2, "application/xml");
+              helper.addAttachment("" + clave + "-factura.pdf", (javax.activation.DataSource)pdfBytes);
               this.emailSender.send(message);
               resp = resp + "{";
               resp = resp + "\"response\":\"1\",";
@@ -164,13 +167,21 @@ public class ReenviarDocsController {
   }
   
   public String tipoDocumento(String td) {
-    String resp = switch (td) {
-      case "FE" -> "Factura Electrónica";
-      case "ND" -> "Nota de débito Electrónica";
-      case "NC" -> "Nota de crédito Electrónica";
-      case "TE" -> "Tiquete Electrónico";
-      default -> "";
-    };
+    String resp = "";
+    switch (td) {
+      case "FE":
+        resp = "Factura Electrónica";
+        break;
+      case "ND":
+        resp = "Nota de débito Electrónica";
+        break;
+      case "NC":
+        resp = "Nota de crédito Electrónica";
+        break;
+      case "TE":
+        resp = "Tiquete Electrónico";
+        break;
+    } 
     return resp;
   }
 }
