@@ -1,62 +1,127 @@
 package app.simplestudio.com.controllers;
 
-import app.simplestudio.com.service.ReportService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import app.simplestudio.com.models.entity.ComprobantesElectronicos;
+import app.simplestudio.com.models.entity.Emisor;
+import app.simplestudio.com.service.IComprobantesElectronicosService;
+import app.simplestudio.com.service.IEmisorService;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.sql.DataSource;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperRunManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-/**
- * Controlador REST para generar y descargar facturas en PDF.
- */
-@RestController
-@RequestMapping("/api-4.3")
+@Controller
+@RequestMapping({"/api-4.3"})
 public class ImpresionController {
-  private static final Logger log = LoggerFactory.getLogger(ImpresionController.class);
-  private final ReportService reportService;
-
-  public ImpresionController(ReportService reportService) {
-    this.reportService = reportService;
-    log.info("ImpresionController initialized");
+  @Autowired
+  public JavaMailSender emailSender;
+  
+  @Autowired
+  public DataSource dataSource;
+  
+  @Autowired
+  public IComprobantesElectronicosService _comprobantesElectronicosService;
+  
+  @Autowired
+  public IEmisorService _emisorService;
+  
+  @Value("${path.upload.files.api}")
+  private String pathUploadFilesApi;
+  
+  @Value("${url.qr}")
+  private String urlQr;
+  
+  @GetMapping({"/imprimir-factura/{clave}"})
+  @ResponseBody
+  public void imprimirFactura(HttpServletResponse response, HttpSession session, @PathVariable("clave") String clave) throws JRException, IOException, SQLException {
+    Connection db = this.dataSource.getConnection();
+    InputStream reportfile = getClass().getResourceAsStream("/facturas.jasper");
+    URL base = getClass().getResource("/");
+    String baseUrl = base.toString();
+    if (clave != null && clave.length() == 50) {
+      ComprobantesElectronicos ce = this._comprobantesElectronicosService.findByClave(clave);
+      if (ce != null) {
+        Emisor e = this._emisorService.findEmisorOnlyIdentificacion(ce.getIdentificacion());
+        String td = tipoDocumento(ce.getTipoDocumento());
+        String logo = e.getLogoEmpresa();
+        if (logo != null && !logo.equals("") && logo.length() > 0) {
+          logo = this.pathUploadFilesApi + "logo/" + logo;
+        } else {
+          logo = this.pathUploadFilesApi + "logo/default.png";
+        } 
+        Map<String, Object> parameter = new HashMap<>();
+        parameter.put("BASE_URL", baseUrl);
+        parameter.put("BASE_URL_LOGO", logo);
+        parameter.put("CLAVE_FACTURA", clave);
+        parameter.put("TIPO_DOCUMENTO", td);
+        parameter.put("RESOLUCION", "“Autorizada mediante resolución Nº DGT-R-033-2019 del 20/06/2019”");
+        parameter.put("NOTA_FACTURA", e.getNataFactura());
+        parameter.put("URL_QR", this.urlQr + clave);
+        try {
+          byte[] bytes = JasperRunManager.runReportToPdf(reportfile, parameter, db);
+          if (bytes != null && bytes.length > 0) {
+            response.setContentType("application/pdf");
+            ServletOutputStream outputstream = response.getOutputStream();
+            outputstream.write(bytes, 0, bytes.length);
+            outputstream.flush();
+            outputstream.close();
+          } else {
+            System.out.println("NO trae nada");
+          } 
+        } catch (JRException ex) {
+          System.out.println("Error del reporte: " + ex.getMessage());
+        } finally {
+          reportfile.close();
+          try {
+            if (db != null)
+              db.close(); 
+          } catch (SQLException ex) {
+            System.out.println("Error: desconectando la base de datos.");
+          } 
+        } 
+      } 
+    } 
   }
-
-  /**
-   * Genera y retorna el PDF de la factura identificado por la clave.
-   *
-   * @param clave clave de 50 caracteres de la factura
-   * @return ResponseEntity con el PDF como recurso descargable
-   */
-  @GetMapping("/imprimir-factura/{clave}")
-  public ResponseEntity<Resource> imprimirFactura(@PathVariable String clave) {
-    log.info("Received request to print factura with clave={}", clave);
-    try {
-      byte[] pdfBytes = reportService.generateFacturaPdf(clave);
-      if (pdfBytes == null || pdfBytes.length == 0) {
-        log.warn("Report generation returned empty PDF for clave={}", clave);
-        return ResponseEntity.noContent().build();
-      }
-
-      ByteArrayResource resource = new ByteArrayResource(pdfBytes);
-      String filename = clave + ".pdf";
-      log.info("Serving PDF for clave={} ({} bytes)", clave, pdfBytes.length);
-
-      return ResponseEntity.ok()
-          .contentType(MediaType.APPLICATION_PDF)
-          .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-          .body(resource);
-    } catch (IllegalArgumentException e) {
-      log.error("Invalid request for clave={}: {}", clave, e.getMessage());
-      return ResponseEntity.badRequest().build();
-    } catch (Exception e) {
-      log.error("Error generating PDF for clave={}", clave, e);
-      return ResponseEntity.status(500).build();
-    }
+  
+  public String tipoDocumento(String td) {
+    String resp = "";
+    switch (td) {
+      case "FE":
+        resp = "Factura Electrónica";
+        break;
+      case "ND":
+        resp = "Nota de débito Electrónica";
+        break;
+      case "NC":
+        resp = "Nota de crédito Electrónica";
+        break;
+      case "TE":
+        resp = "Tiquete Electrónico";
+        break;
+      case "FEC":
+        resp = "Factura Electrónica Compra";
+        break;
+      case "FEE":
+        resp = "Factura Electrónica Exportación";
+        break;
+    } 
+    return resp;
   }
 }
+

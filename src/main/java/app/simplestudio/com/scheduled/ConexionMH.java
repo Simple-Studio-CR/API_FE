@@ -14,16 +14,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.util.ByteArrayDataSource;
+import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import javax.mail.util.ByteArrayDataSource;
 import javax.sql.DataSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -96,7 +95,7 @@ public class ConexionMH {
   
   private String _clientId;
   
-//  @Scheduled(fixedDelay = 60000L)
+  @Scheduled(fixedDelay = 60000L)
   public void EnviarComprobantesMH() {
     try {
       this.log.info("Preparando el entorno para enviar los documentos a MH");
@@ -133,7 +132,7 @@ public class ConexionMH {
     } 
   }
   
-//  @Scheduled(fixedDelay = 120000L)
+  @Scheduled(fixedDelay = 120000L)
   public void ConsultaComprobantesMH() {
     this.log.info("Preparando el entorno para consultar los documentos a MH");
     ObjectMapper objectMapper = new ObjectMapper();
@@ -170,8 +169,7 @@ public class ConexionMH {
           FileSystemResource file_1 = new FileSystemResource(new File(file1));
           if (reconsultas <= 10) {
             XPath xPath = XPathFactory.newInstance().newXPath();
-            XmlHelper xmlHelper = new XmlHelper();
-            Document xml = xmlHelper.parse(Path.of(file1));
+            Document xml = XmlHelper.getDocument(file1);
             NodeList nodes = (NodeList)xPath.evaluate("/MensajeHacienda/DetalleMensaje", xml.getDocumentElement(), XPathConstants.NODESET);
             if (nodes != null && nodes.item(0).getTextContent().equals("La firma del comprobante electrónico no es válida")) {
               estadoHacienda = "";
@@ -258,9 +256,9 @@ public class ConexionMH {
         String file2 = this.pathUploadFilesApi + emisor + "/" + clave + "-factura-sign.xml";
         FileSystemResource file_1 = new FileSystemResource(new File(file1));
         FileSystemResource file_2 = new FileSystemResource(new File(file2));
-        helper.addAttachment("" + clave + "-respuesta-mh.xml", file_1, "application/xml");
-        helper.addAttachment("" + clave + "-factura-sign.xml", file_2, "application/xml");
-        helper.addAttachment("" + clave + "-factura.pdf", byteArrayDataSource);
+        helper.addAttachment("" + clave + "-respuesta-mh.xml", (InputStreamSource)file_1, "application/xml");
+        helper.addAttachment("" + clave + "-factura-sign.xml", (InputStreamSource)file_2, "application/xml");
+        helper.addAttachment("" + clave + "-factura.pdf", (javax.activation.DataSource)byteArrayDataSource);
         try {
           this.emailSender.send(message);
           this.log.info("Se envío un mail a " + emailTo);

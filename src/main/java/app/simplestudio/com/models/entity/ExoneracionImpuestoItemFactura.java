@@ -1,11 +1,11 @@
 package app.simplestudio.com.models.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "facturas_items_impuestos_exoneraciones")
@@ -29,7 +29,7 @@ public class ExoneracionImpuestoItemFactura {
   @Column(name = "porcentaje_exoneracion", length = 3)
   private int porcentajeExoneracion;
   
-  @Column(name = "monto_exoneracion", precision = 18)
+  @Column(name = "monto_exoneracion", precision = 18, scale = 5)
   private Double montoExoneracion;
   
   public Long getId() {

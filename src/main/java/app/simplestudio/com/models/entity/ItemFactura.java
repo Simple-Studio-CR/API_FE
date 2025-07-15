@@ -3,16 +3,16 @@ package app.simplestudio.com.models.entity;
 import app.simplestudio.com.models.entity.ImpuestosItemFactura;
 import java.util.ArrayList;
 import java.util.List;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "facturas_items")
@@ -64,7 +64,7 @@ public class ItemFactura {
   @Column(name = "codigo_comercial_codigo5", length = 20)
   private String codigoComercialCodigo5;
   
-  @Column(precision = 18)
+  @Column(precision = 18, scale = 5)
   private Double cantidad;
   
   @Column(name = "unidad_medida", length = 15)
@@ -76,49 +76,49 @@ public class ItemFactura {
   @Column(length = 200)
   private String detalle;
   
-  @Column(name = "precio_unitario", precision = 18)
+  @Column(name = "precio_unitario", precision = 18, scale = 5)
   private Double precioUnitario;
   
-  @Column(name = "monto_total", precision = 18)
+  @Column(name = "monto_total", precision = 18, scale = 5)
   private Double montoTotal;
   
-  @Column(name = "sub_total", precision = 18)
+  @Column(name = "sub_total", precision = 18, scale = 5)
   private Double subTotal;
   
-  @Column(name = "monto_descuento", precision = 18)
+  @Column(name = "monto_descuento", precision = 18, scale = 5)
   private Double montoDescuento;
   
   @Column(name = "naturaleza_descuento")
   private String naturalezaDescuento;
   
-  @Column(name = "monto_descuento2", precision = 18)
+  @Column(name = "monto_descuento2", precision = 18, scale = 5)
   private Double montoDescuento2;
   
   @Column(name = "naturaleza_descuento2")
   private String naturalezaDescuento2;
   
-  @Column(name = "monto_descuento3", precision = 18)
+  @Column(name = "monto_descuento3", precision = 18, scale = 5)
   private Double montoDescuento3;
   
   @Column(name = "naturaleza_descuento3")
   private String naturalezaDescuento3;
   
-  @Column(name = "monto_descuento4", precision = 18)
+  @Column(name = "monto_descuento4", precision = 18, scale = 5)
   private Double montoDescuento4;
   
   @Column(name = "naturaleza_descuento4")
   private String naturalezaDescuento4;
   
-  @Column(name = "monto_descuento5", precision = 18)
+  @Column(name = "monto_descuento5", precision = 18, scale = 5)
   private Double montoDescuento5;
   
   @Column(name = "naturaleza_descuento5")
   private String naturalezaDescuento5;
   
-  @Column(name = "impuesto_neto", precision = 18)
+  @Column(name = "impuesto_neto", precision = 18, scale = 5)
   private Double impuestoNeto;
   
-  @Column(name = "monto_total_linea", precision = 18)
+  @Column(name = "monto_total_linea", precision = 18, scale = 5)
   private Double montoTotalLinea;
   
   public Long getId() {
