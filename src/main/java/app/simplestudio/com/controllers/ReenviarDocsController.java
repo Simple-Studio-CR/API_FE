@@ -5,7 +5,6 @@ import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
 import app.simplestudio.com.util.DocumentTypeUtil;
-import app.simplestudio.com.util.EmailManagerUtil;
 import app.simplestudio.com.util.FileManagerUtil;
 import app.simplestudio.com.util.ReportGeneratorUtil;
 import app.simplestudio.com.util.ResendDocumentUtil;
@@ -53,9 +52,6 @@ public class ReenviarDocsController {
   // ==================== NUEVOS UTILS ====================
   @Autowired
   private DocumentTypeUtil documentTypeUtil;
-
-  @Autowired
-  private EmailManagerUtil emailManagerUtil;
 
   @Autowired
   private ReportGeneratorUtil reportGeneratorUtil;

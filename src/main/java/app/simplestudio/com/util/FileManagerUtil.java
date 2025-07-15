@@ -69,6 +69,25 @@ public class FileManagerUtil {
             }
         }
     }
+
+    public boolean directoryExists(String directoryPath) {
+        if (directoryPath == null || directoryPath.trim().isEmpty()) {
+            log.warn("Ruta de directorio es null o vacía");
+            return false;
+        }
+
+        try {
+            File directory = new File(directoryPath.trim());
+            boolean exists = directory.exists() && directory.isDirectory();
+
+            log.debug("Verificación directorio [{}]: {}", directoryPath, exists ? "Existe" : "No existe");
+            return exists;
+
+        } catch (Exception e) {
+            log.error("Error verificando existencia del directorio [{}]: {}", directoryPath, e.getMessage());
+            return false;
+        }
+    }
     
     /**
      * Elimina archivo
