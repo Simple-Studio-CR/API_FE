@@ -19,10 +19,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.mail.MessagingException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import javax.mail.util.ByteArrayDataSource;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
 import javax.sql.DataSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -256,9 +256,9 @@ public class ConexionMH {
         String file2 = this.pathUploadFilesApi + emisor + "/" + clave + "-factura-sign.xml";
         FileSystemResource file_1 = new FileSystemResource(new File(file1));
         FileSystemResource file_2 = new FileSystemResource(new File(file2));
-        helper.addAttachment("" + clave + "-respuesta-mh.xml", (InputStreamSource)file_1, "application/xml");
-        helper.addAttachment("" + clave + "-factura-sign.xml", (InputStreamSource)file_2, "application/xml");
-        helper.addAttachment("" + clave + "-factura.pdf", (javax.activation.DataSource)byteArrayDataSource);
+        helper.addAttachment("" + clave + "-respuesta-mh.xml", file_1, "application/xml");
+        helper.addAttachment("" + clave + "-factura-sign.xml", file_2, "application/xml");
+        helper.addAttachment("" + clave + "-factura.pdf", byteArrayDataSource);
         try {
           this.emailSender.send(message);
           this.log.info("Se envío un mail a " + emailTo);

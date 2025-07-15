@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Iterator;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -438,7 +438,7 @@ public class GeneraXmlImpl implements IGeneraXml {
   
   public String procesarTexto(String j) {
     String r = "";
-    r = StringEscapeUtils.escapeXml(j);
+    r = StringEscapeUtils.escapeXml10(j);
     return r;
   }
 }

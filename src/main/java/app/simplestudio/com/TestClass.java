@@ -16,10 +16,10 @@ public class TestClass {
       X509Certificate c = (X509Certificate)p12.getCertificate(alias);
       System.out.println("Fecha de emisi" + c.getNotBefore());
       System.out.println("Fecha de caducidad: " + c.getNotAfter());
-      Principal subject = c.getSubjectDN();
+      Principal subject = c.getSubjectX500Principal();
       String[] subjectArray = subject.toString().split(",");
       for (String s : subjectArray) {
-        System.out.println(s.toString());
+        System.out.println(s);
         String[] str = s.trim().split("=");
         String key = str[0];
         String value = str[1];

@@ -32,12 +32,12 @@ public class DescargaXmlController {
       if (!urlResource.exists() || !urlResource.isReadable()) {
         response.put("resp", "401");
         response.put("error", "Documento no existe");
-        return new ResponseEntity(response, HttpStatus.CREATED);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
       } 
     } catch (MalformedURLException e) {
       response.put("resp", "401");
       response.put("error", e.getMessage());
-      return new ResponseEntity(response, HttpStatus.CREATED);
+      return new ResponseEntity<>(response, HttpStatus.CREATED);
     } 
     return ((ResponseEntity.BodyBuilder)ResponseEntity.ok()
       .header("Content-Disposition", new String[] { "attachment; filename=\"" + urlResource.getFilename() + "\"" })).body(urlResource);
