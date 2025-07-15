@@ -20,7 +20,7 @@ public interface IComprobantesElectronicosDao extends CrudRepository<Comprobante
   @Query("UPDATE ComprobantesElectronicos c SET c.responseCodeSend=?1, c.headers = ?2 WHERE c.clave =?3 AND c.identificacion = ?4")
   void updateComprobantesElectronicosByClaveAndEmisor(String paramString1, String paramString2, String paramString3, String paramString4);
   
-  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.responseCodeSend IS NULL OR c.responseCodeSend = '' OR c.responseCodeSend != 202 AND (c.indEstado != 'aceptado' OR c.indEstado IS NULL OR c.indEstado = '')")
+  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.responseCodeSend IS NULL OR c.responseCodeSend = '' OR c.responseCodeSend != '202' AND (c.indEstado != 'aceptado' OR c.indEstado IS NULL OR c.indEstado = '')")
   List<ComprobantesElectronicos> findAllForSend();
   
   @Modifying(clearAutomatically = true)
