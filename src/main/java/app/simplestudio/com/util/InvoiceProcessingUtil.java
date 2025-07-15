@@ -1,19 +1,18 @@
 package app.simplestudio.com.util;
 
 import app.simplestudio.com.mh.CCampoFactura;
+import app.simplestudio.com.models.entity.CTerminal;
 import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
-import app.simplestudio.com.models.entity.CTerminal;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class InvoiceProcessingUtil {

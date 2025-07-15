@@ -19,9 +19,13 @@ import app.simplestudio.com.util.FileManagerUtil;
 import app.simplestudio.com.util.InvoiceProcessingUtil;
 import app.simplestudio.com.util.JsonProcessorUtil;
 import app.simplestudio.com.util.XmlValidationUtil;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Map;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
@@ -39,12 +43,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Map;
-
 @RestController
 @RequestMapping({"/api-4.3"})
 public class RecepcionController {
@@ -56,9 +54,6 @@ public class RecepcionController {
   private IGeneraXml _generaXml;
 
   @Autowired
-  private FuncionesService _funcionesService;
-
-  @Autowired
   private ISigner _signer;
 
   @Autowired
@@ -68,13 +63,7 @@ public class RecepcionController {
   private IEmisorService _emisorService;
 
   @Autowired
-  private IMensajeReceptorService _mensajeReceptorService;
-
-  @Autowired
   private IComprobantesElectronicosService _comprobantesElectronicosService;
-
-  @Autowired
-  private IFacturaService _facturaService;
 
   // ==================== NUEVOS UTILS ====================
   @Autowired
@@ -87,13 +76,7 @@ public class RecepcionController {
   private DocumentTypeUtil documentTypeUtil;
 
   @Autowired
-  private EnvironmentConfigUtil environmentConfigUtil;
-
-  @Autowired
   private FileManagerUtil fileManagerUtil;
-
-  @Autowired
-  private JsonProcessorUtil jsonProcessorUtil;
 
   @Autowired
   private XmlValidationUtil xmlValidationUtil;
