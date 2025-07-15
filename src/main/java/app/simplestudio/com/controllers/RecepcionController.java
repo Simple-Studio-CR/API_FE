@@ -22,6 +22,8 @@ import app.simplestudio.com.util.XmlValidationUtil;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +34,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.Map;
 
 @RestController
@@ -198,6 +208,56 @@ public class RecepcionController {
     }
   }
 
+  /**
+   * FIRMA ORIGINAL MANTENIDA - Consulta cualquier documento
+   */
+  @RequestMapping(value = {"/consultar-cualquier-documento"}, method = {RequestMethod.POST},
+      consumes = {"application/json"}, produces = {"application/json"})
+  public ResponseEntity<?> consultaCualquierDocumento(@RequestBody String jsonRequest) throws Exception {
+    log.info("=== INICIO CONSULTA CUALQUIER DOCUMENTO ===");
+
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      JsonNode requestData = objectMapper.readTree(jsonRequest);
+
+      return processAnyDocumentQuery(requestData, objectMapper);
+
+    } catch (Exception e) {
+      log.error("Error consultando cualquier documento", e);
+      return new ResponseEntity<>(
+          invoiceProcessingUtil.buildErrorResponse(400, "Problemas con Hacienda"),
+          HttpStatus.BAD_REQUEST
+      );
+    } finally {
+      log.info("=== FIN CONSULTA CUALQUIER DOCUMENTO ===");
+    }
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - Consulta documentos externos
+   */
+  @RequestMapping(value = {"/consultar-documentos-externos"}, method = {RequestMethod.POST},
+      consumes = {"application/json"}, produces = {"application/json"})
+  public ResponseEntity<?> consultaDocumentoExterno(@RequestBody String jsonRequest) throws IOException {
+    log.info("=== INICIO CONSULTA DOCUMENTO EXTERNO ===");
+
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      JsonNode requestData = objectMapper.readTree(jsonRequest);
+
+      return processExternalDocumentQuery(requestData, objectMapper);
+
+    } catch (Exception e) {
+      log.error("Error consultando documento externo", e);
+      return new ResponseEntity<>(
+          invoiceProcessingUtil.buildErrorResponse(400, "Problemas con Hacienda"),
+          HttpStatus.BAD_REQUEST
+      );
+    } finally {
+      log.info("=== FIN CONSULTA DOCUMENTO EXTERNO ===");
+    }
+  }
+
   // ==================== MÉTODOS AUXILIARES REFACTORIZADOS ====================
 
   /**
@@ -258,18 +318,17 @@ public class RecepcionController {
 
     // Generar clave
     String clave = _sender.getClave(
-        documentTypeUtil.getTipoDocumentoFromClave(tipoDocumento),
+        documentTypeUtil.tipoDocumento(tipoDocumento),
         emisor.getTipoDeIdentificacion().getId().toString(),
         emisor.getIdentificacion(),
         requestData.path("situacion").asText(),
-        "506", // Costa Rica
+        "506",
         consecutivo.toString(),
-        "00000001", // Código de seguridad por defecto
+        "00000001",
         xmlValidationUtil.str_pad(requestData.path("sucursal").asText(), 3, "0", "STR_PAD_LEFT"),
         xmlValidationUtil.str_pad(requestData.path("terminal").asText(), 5, "0", "STR_PAD_LEFT")
     );
 
-    // Extraer clave del JSON response
     clave = extractClaveFromJsonResponse(clave);
 
     // Crear CCampoFactura
@@ -422,6 +481,96 @@ public class RecepcionController {
   }
 
   /**
+   * Procesa consulta de cualquier documento (con conexión a Hacienda)
+   */
+  private ResponseEntity<?> processAnyDocumentQuery(JsonNode requestData, ObjectMapper objectMapper) throws Exception {
+    String tokenAccess = requestData.path("tokenAccess").asText().trim();
+    String emisorId = requestData.path("emisor").asText();
+
+    Emisor emisor = _emisorService.findEmisorByIdentificacion(emisorId, tokenAccess);
+    if (emisor == null) {
+      return new ResponseEntity<>(
+          invoiceProcessingUtil.buildErrorResponse(203, "Acceso denegado"),
+          HttpStatus.NON_AUTHORITATIVE_INFORMATION
+      );
+    }
+
+    // Configurar ambiente y credenciales
+    EnvironmentConfigUtil.EnvironmentConfig envConfig = invoiceProcessingUtil.configureEnvironment(emisor);
+
+    String clave = requestData.path("clave").asText();
+    String pathXml = pathUploadFilesApi + "/" + emisor.getIdentificacion() + "/";
+
+    // Consultar en Hacienda
+    String apiResponse = _sender.consultarEstadoCualquierDocumento(
+        envConfig.getEndpoint(),
+        clave,
+        emisor.getUserApi(),
+        emisor.getPwApi(),
+        envConfig.getUrlToken(),
+        pathXml,
+        envConfig.getClientId(),
+        emisor.getIdentificacion()
+    );
+
+    // Procesar respuesta de Hacienda
+    JsonNode responseData = objectMapper.readTree(apiResponse);
+
+    Map<String, Object> response = invoiceProcessingUtil.buildSuccessResponse(responseData.path("clave").asText(), "Consulta exitosa");
+    response.put("fecha", responseData.path("fecha").asText());
+    response.put("ind-estado", responseData.path("ind-estado").asText());
+    response.put("respuesta-xml", responseData.path("respuesta-xml").asText());
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  /**
+   * Procesa consulta de documentos externos (con procesamiento XML)
+   */
+  private ResponseEntity<?> processExternalDocumentQuery(JsonNode requestData, ObjectMapper objectMapper) throws Exception {
+    String tokenAccess = requestData.path("tokenAccess").asText().trim();
+    String emisorId = requestData.path("emisor").asText();
+
+    Emisor emisor = _emisorService.findEmisorByIdentificacion(emisorId, tokenAccess);
+    if (emisor == null) {
+      return new ResponseEntity<>(
+          invoiceProcessingUtil.buildErrorResponse(203, "Acceso denegado"),
+          HttpStatus.NON_AUTHORITATIVE_INFORMATION
+      );
+    }
+
+    // Configurar ambiente y credenciales
+    EnvironmentConfigUtil.EnvironmentConfig envConfig = invoiceProcessingUtil.configureEnvironment(emisor);
+
+    String clave = requestData.path("clave").asText();
+    String pathXml = pathUploadFilesApi + "/" + emisor.getIdentificacion() + "/";
+
+    // Consultar en Hacienda
+    String apiResponse = _sender.consultarEstadoCualquierDocumento(
+        envConfig.getEndpoint(),
+        clave,
+        emisor.getUserApi(),
+        emisor.getPwApi(),
+        envConfig.getUrlToken(),
+        pathXml,
+        envConfig.getClientId(),
+        emisor.getIdentificacion()
+    );
+
+    // Procesar respuesta con XML
+    JsonNode responseData = objectMapper.readTree(apiResponse);
+    String mensajeMh = extractMessageFromXmlResponse(responseData.path("respuesta-xml").asText());
+
+    Map<String, Object> response = invoiceProcessingUtil.buildSuccessResponse(responseData.path("clave").asText(), "Consulta exitosa");
+    response.put("response-code", 200);
+    response.put("fecha", responseData.path("fecha").asText());
+    response.put("ind-estado", responseData.path("ind-estado").asText());
+    response.put("respuesta-xml", mensajeMh);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  /**
    * Genera XML, firma y guarda el documento
    */
   private ResponseEntity<?> processDocumentGeneration(CCampoFactura campoFactura, Emisor emisor,
@@ -459,23 +608,59 @@ public class RecepcionController {
         null, emisor, tipoDocumento, pathUploadFilesApi
     ));
 
-    return new ResponseEntity<>(
-        invoiceProcessingUtil.buildSuccessResponse(campoFactura.getClave(), "Documento procesado exitosamente"),
-        HttpStatus.OK
-    );
+    // Construir respuesta de éxito
+    Map<String, Object> response = invoiceProcessingUtil.buildSuccessResponse(campoFactura.getClave(), "Documento procesado exitosamente");
+    response.put("consecutivo", consecutivo);
+    response.put("fechaEmision", campoFactura.getFechaEmision());
+    response.put("fileXmlSign", campoFactura.getClave() + "-factura-sign");
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   /**
    * Procesa mensaje receptor específico
    */
   private ResponseEntity<?> processSpecificMessageReceptor(JsonNode requestData, Emisor emisor, String tipoDocumento, Long consecutivo) throws Exception {
-    // TODO: Implementar lógica específica para mensaje receptor
-    // Similar a processDocumentGeneration pero para mensajes receptor
+    // Configurar ambiente
+    EnvironmentConfigUtil.EnvironmentConfig envConfig = invoiceProcessingUtil.configureEnvironment(emisor);
 
-    return new ResponseEntity<>(
-        invoiceProcessingUtil.buildSuccessResponse("MR-" + consecutivo, "Mensaje receptor procesado"),
-        HttpStatus.OK
+    // Crear estructura para mensaje receptor
+    String fechaEmision = invoiceProcessingUtil.generateCurrentEmissionDate();
+
+    // Generar clave para mensaje receptor
+    String clave = _sender.getClave(
+        documentTypeUtil.tipoDocumento(tipoDocumento),
+        emisor.getTipoDeIdentificacion().getId().toString(),
+        emisor.getIdentificacion(),
+        "1", // situación normal para MR
+        "506",
+        consecutivo.toString(),
+        "00000001",
+        xmlValidationUtil.str_pad(requestData.path("sucursal").asText(), 3, "0", "STR_PAD_LEFT"),
+        xmlValidationUtil.str_pad(requestData.path("terminal").asText(), 5, "0", "STR_PAD_LEFT")
     );
+
+    clave = extractClaveFromJsonResponse(clave);
+
+    // Crear mensaje receptor en BD
+    ComprobantesElectronicos ce = new ComprobantesElectronicos();
+    ce.setEmisor(emisor);
+    ce.setConsecutivo(consecutivo);
+    ce.setTipoDocumento(tipoDocumento);
+    ce.setIdentificacion(emisor.getIdentificacion());
+    ce.setClave(clave);
+    ce.setSucursal(requestData.path("sucursal").asInt());
+    ce.setTerminal(requestData.path("terminal").asInt());
+    ce.setFechaEmision(fechaEmision);
+    ce.setAmbiente(emisor.getAmbiente());
+
+    _comprobantesElectronicosService.save(ce);
+
+    Map<String, Object> response = invoiceProcessingUtil.buildSuccessResponse(clave, "Mensaje receptor procesado");
+    response.put("consecutivo", consecutivo);
+    response.put("fechaEmision", fechaEmision);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   /**
@@ -485,5 +670,44 @@ public class RecepcionController {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode response = mapper.readTree(jsonResponse);
     return response.path("response").asText();
+  }
+
+  /**
+   * Extrae mensaje de respuesta XML de Hacienda
+   */
+  private String extractMessageFromXmlResponse(String base64XmlResponse) throws Exception {
+    // Decodificar base64
+    String xmlContent = new String(Base64.decodeBase64(base64XmlResponse), "UTF-8");
+
+    // Parsear XML
+    DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+    InputSource is = new InputSource();
+    is.setCharacterStream(new StringReader(xmlContent));
+    Document doc = db.parse(is);
+
+    // Extraer mensaje
+    NodeList nodes = doc.getElementsByTagName("MensajeHacienda");
+    String mensajeMh = "";
+
+    for (int i = 0; i < nodes.getLength(); i++) {
+      Element element = (Element) nodes.item(i);
+      NodeList nameNodes = element.getElementsByTagName("DetalleMensaje");
+      if (nameNodes.getLength() > 0) {
+        Element lineElement = (Element) nameNodes.item(0);
+        mensajeMh = StringEscapeUtils.escapeJava(getCharacterDataFromElement(lineElement));
+      }
+    }
+
+    return mensajeMh;
+  }
+
+  /**
+   * Método auxiliar para extraer datos de elemento XML
+   */
+  private String getCharacterDataFromElement(Element element) {
+    if (element != null && element.getFirstChild() != null) {
+      return element.getFirstChild().getNodeValue();
+    }
+    return "";
   }
 }
