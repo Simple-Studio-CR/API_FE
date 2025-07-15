@@ -1,12 +1,5 @@
 package app.simplestudio.com.models.entity;
 
-import app.simplestudio.com.models.entity.CBarrio;
-import app.simplestudio.com.models.entity.CCanton;
-import app.simplestudio.com.models.entity.CDistrito;
-import app.simplestudio.com.models.entity.CProvincia;
-import app.simplestudio.com.models.entity.CTipoDeIdentificacion;
-import app.simplestudio.com.models.entity.Usuario;
-import java.util.Date;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -17,7 +10,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;	
+import jakarta.persistence.TemporalType;
+import java.util.Date;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity

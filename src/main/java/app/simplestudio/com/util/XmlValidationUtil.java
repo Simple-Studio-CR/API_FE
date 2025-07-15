@@ -1,10 +1,9 @@
 package app.simplestudio.com.util;
 
-import org.apache.commons.text.StringEscapeUtils;
-import org.springframework.stereotype.Component;
-
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import org.apache.commons.text.StringEscapeUtils;
+import org.springframework.stereotype.Component;
 
 @Component
 public class XmlValidationUtil {

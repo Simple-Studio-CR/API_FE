@@ -3,7 +3,6 @@ package app.simplestudio.com.service;
 import app.simplestudio.com.models.dao.IEmisorDao;
 import app.simplestudio.com.models.entity.CTerminal;
 import app.simplestudio.com.models.entity.Emisor;
-import app.simplestudio.com.service.IEmisorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

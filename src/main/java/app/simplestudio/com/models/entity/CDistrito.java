@@ -1,6 +1,5 @@
 package app.simplestudio.com.models.entity;
 
-import app.simplestudio.com.models.entity.CCanton;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

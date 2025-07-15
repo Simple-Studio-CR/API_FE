@@ -26,11 +26,11 @@ public class MyAlgorithmsProviderEx implements AlgorithmsProviderEx {
   }
   
   public Algorithm getCanonicalizationAlgorithmForSignature() {
-    return (Algorithm)new CanonicalXMLWithoutComments();
+    return new CanonicalXMLWithoutComments();
   }
   
   public Algorithm getCanonicalizationAlgorithmForTimeStampProperties() {
-    return (Algorithm)new CanonicalXMLWithoutComments();
+    return new CanonicalXMLWithoutComments();
   }
   
   public String getDigestAlgorithmForDataObjsReferences() {

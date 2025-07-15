@@ -2,7 +2,6 @@ package app.simplestudio.com.service;
 
 import app.simplestudio.com.models.dao.ITokenControlDao;
 import app.simplestudio.com.models.entity.TokenControl;
-import app.simplestudio.com.service.ITokenControlService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

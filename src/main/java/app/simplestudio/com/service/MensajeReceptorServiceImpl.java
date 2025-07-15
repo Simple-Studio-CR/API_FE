@@ -2,7 +2,6 @@ package app.simplestudio.com.service;
 
 import app.simplestudio.com.models.dao.IMensajeReceptorDao;
 import app.simplestudio.com.models.entity.MensajeReceptor;
-import app.simplestudio.com.service.IMensajeReceptorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

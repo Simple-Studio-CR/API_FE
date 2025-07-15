@@ -1,6 +1,5 @@
 package app.simplestudio.com.models.entity;
 
-import app.simplestudio.com.models.entity.CSucursal;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
