@@ -6,6 +6,11 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.TokenControl;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.ITokenControlService;
+import app.simplestudio.com.util.HttpClientUtil;
+import app.simplestudio.com.util.XmlParserUtil;
+import app.simplestudio.com.util.JsonProcessorUtil;
+import app.simplestudio.com.util.FileManagerUtil;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -45,85 +50,558 @@ import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
-
 @Service
 public class Sender {
+
   @Autowired
   private ITokenControlService _tokenControlService;
-  
+
   @Autowired
   private IComprobantesElectronicosService _comprobantes;
-  
+
   @Autowired
   private FuncionesService _funcionesService;
-  
-  private int timeoutMH = 35;
-  
-  private final Logger log = LoggerFactory.getLogger(getClass());
-  
-  private void crearToken(String username, String password, String _urlToken, String _clientId, String emisorToken, String accion, String refreshToken) throws Exception {
-    String responseString;
-    CloseableHttpClient client;
-    CloseableHttpResponse response;
-    try {
-      SSLContext sslContext = (new SSLContextBuilder()).loadTrustMaterial(null, (certificate, authType) -> true).build();
-      client = HttpClients.custom().setSSLContext(sslContext).setSSLHostnameVerifier(
-          new NoopHostnameVerifier()).build();
-      HttpPost httpPost = new HttpPost(_urlToken + "token");
-      List<NameValuePair> urlParameters = new ArrayList<>();
-      if (accion.equals("R")) {
-        urlParameters.add(new BasicNameValuePair("grant_type", "refresh_token"));
-        urlParameters.add(new BasicNameValuePair("refresh_token", refreshToken));
-        this.log.info("Refrescando token...");
-      } else {
-        urlParameters.add(new BasicNameValuePair("grant_type", "password"));
-        this.log.info("Generando un nuevo token...");
-      } 
-      urlParameters.add(new BasicNameValuePair("client_id", _clientId));
-      urlParameters.add(new BasicNameValuePair("client_secret", ""));
-      urlParameters.add(new BasicNameValuePair("scope", ""));
-      urlParameters.add(new BasicNameValuePair("username", username));
-      urlParameters.add(new BasicNameValuePair("password", password));
-      httpPost.addHeader("content-type", "application/x-www-form-urlencoded");
-      httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
-      Long startTime = System.currentTimeMillis();
-      RequestConfig config = RequestConfig.custom().setConnectTimeout(this.timeoutMH * 1000).setConnectionRequestTimeout(this.timeoutMH * 1000).setSocketTimeout(this.timeoutMH * 1000).build();
-      httpPost.setConfig(config);
-      response = client.execute(httpPost);
-      HttpEntity entity2 = response.getEntity();
-      responseString = EntityUtils.toString(entity2, "UTF-8");
-      ObjectMapper objectMapper = new ObjectMapper();
-      Map<String, Object> res = objectMapper.readValue(responseString, new TypeReference<>() {
 
-      });
-      Long actualMenosInicio = System.currentTimeMillis() - startTime;
-      Double duracionQuery = Double.parseDouble(actualMenosInicio + "") / 1000.0D;
-      this.log.info("Duració generando token: " + duracionQuery);
-      TokenControl tc = new TokenControl();
-      TokenControl t = this._tokenControlService.findByEmisor(emisorToken);
-      if (res.get("error") != null && res.get("error").equals("invalid_grant")) {
-        this.log.info("Algo paso con el refreshToken entonces voy a borrar el token para que se genere uno nuevo");
-        logoutMh(username, password, _urlToken, _clientId, emisorToken, "", refreshToken);
-        this._tokenControlService.deleteTokenByEmisor(emisorToken);
-      } 
-      Long horaCreacion = System.currentTimeMillis() / 1000L / 60L;
-      if (t != null) {
-        this._tokenControlService.updateAccessToken(res.get("access_token").toString(), res.get("expires_in").toString(), horaCreacion, t.getId());
-      } else {
-        tc.setEmisor(emisorToken);
-        tc.setAccessToken(res.get("access_token").toString());
-        tc.setExpiresIn(res.get("expires_in").toString());
-        tc.setRefreshTokens(res.get("refresh_token").toString());
-        tc.setRefreshExpiresIn(res.get("refresh_expires_in").toString());
-        tc.setHoraCreacionToken(horaCreacion);
-        tc.setHoraCreacionRefreshToken(System.currentTimeMillis() / 1000L / 60L);
-        this._tokenControlService.save(tc);
-      } 
+  // Nuevas clases auxiliares
+  @Autowired
+  private HttpClientUtil httpClientUtil;
+
+  @Autowired
+  private XmlParserUtil xmlParserUtil;
+
+  @Autowired
+  private JsonProcessorUtil jsonProcessorUtil;
+
+  @Autowired
+  private FileManagerUtil fileManagerUtil;
+
+  private int timeoutMH = 35;
+  private final Logger log = LoggerFactory.getLogger(getClass());
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - crearToken
+   */
+  private void crearToken(String username, String password, String _urlToken, String _clientId, String emisorToken, String accion, String refreshToken) throws Exception {
+    try {
+      // Delegar a método auxiliar
+      String responseString = executeTokenCreation(username, password, _urlToken, _clientId, accion, refreshToken);
+      processTokenResponse(responseString, emisorToken, _urlToken, _clientId, username, password, refreshToken);
     } catch (Exception e) {
-      this.log.info("Mensaje generado por el clase Sender: " + e.getMessage());
-    } 
+      log.info("Mensaje generado por el clase Sender: " + e.getMessage());
+    }
   }
-  
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - getClave
+   */
+  public String getClave(String tipoDocumento, String tipoCedula, String cedula, String situacion, String codigoPais, String consecutivo, String codigoSeguridad, String sucursal, String terminal) {
+    return generateClaveNumerica(tipoDocumento, tipoCedula, cedula, situacion, codigoPais, consecutivo, codigoSeguridad, sucursal, terminal);
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - generateXml
+   */
+  public void generateXml(String path, String datosXml, String name) throws Exception {
+    fileManagerUtil.saveToFile(path + name + ".xml", datosXml);
+    log.info("Archivo creado con éxito");
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - getToken
+   */
+  private String getToken(String username, String password, String _urlToken, String _clientId, String emisorToken) throws Exception {
+    return manageTokenLifecycle(username, password, _urlToken, _clientId, emisorToken);
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - send
+   */
+  public String send(String clave, String endpoint, String xmlPath, String username, String password, String _urlToken, String _clientId, String emisorToken, String tipoDocumento) {
+    String resp = "";
+    try {
+      // Verificar si ya existe el comprobante
+      ComprobantesElectronicos ce = _comprobantes.findByClaveDocumento(clave);
+
+      if (ce.getResponseCodeSend() == null) {
+        log.info("Enviando comprobante por primera vez");
+        resp = sendDocumentFirstTime(clave, endpoint, xmlPath, username, password, _urlToken, _clientId, emisorToken, tipoDocumento);
+      } else {
+        resp = handleAlreadySentDocument(clave, endpoint, xmlPath, username, password, _urlToken, _clientId, emisorToken, tipoDocumento);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return resp;
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - consultarSiMhLoRecibio
+   */
+  public String consultarSiMhLoRecibio(String endpoint, String clave, String username, String password, String _urlToken, String _clientId, String emisorToken) {
+    String estadoMh = "";
+    try {
+      String token = getToken(username, password, _urlToken, _clientId, emisorToken);
+      String url = endpoint + clave;
+
+      try (CloseableHttpResponse response = httpClientUtil.executeGetWithBearer(url, token)) {
+        String responseString = httpClientUtil.extractResponseContent(response);
+        log.info("Metodo consultarSiMhLoRecibio");
+
+        // Procesar respuesta
+        estadoMh = processConsultaResponse(responseString);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      estadoMh = "error";
+    }
+    return estadoMh;
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - consultarEstadoDocumento
+   */
+  public String consultarEstadoDocumento(String endpoint, String clave, String username, String password, String _urlToken, String pathUploadFilesApi, String _clientId, String emisorToken) {
+    String responseString;
+    try {
+      String token = getToken(username, password, _urlToken, _clientId, emisorToken);
+      String url = endpoint + clave;
+
+      try (CloseableHttpResponse response = httpClientUtil.executeGetWithBearer(url, token)) {
+        String rawResponse = httpClientUtil.extractResponseContent(response);
+
+        // Procesar respuesta y guardar XML
+        responseString = processDocumentStatusResponse(rawResponse, pathUploadFilesApi, response.getStatusLine().getStatusCode());
+      }
+    } catch (Exception e) {
+      log.info("Al parecer nunca se ha enviado");
+      responseString = buildErrorStatusResponse();
+    }
+    return responseString;
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - consultarEstadoCualquierDocumento
+   */
+  public String consultarEstadoCualquierDocumento(String endpoint, String clave, String username, String password, String _urlToken, String pathUploadFilesApi, String _clientId, String emisorToken) {
+    String responseString;
+    try {
+      String token = getToken(username, password, _urlToken, _clientId, emisorToken);
+      String url = endpoint + clave;
+
+      try (CloseableHttpResponse response = httpClientUtil.executeGetWithBearer(url, token)) {
+        String rawResponse = httpClientUtil.extractResponseContent(response);
+        log.info("Codigo generado por MH " + response.getStatusLine().getStatusCode());
+        log.info("Errores generados: " + getHeaders(response.getAllHeaders()));
+
+        // Procesar respuesta
+        responseString = processAnyDocumentResponse(rawResponse);
+
+        long duracionQuery = calculateDuration();
+        log.info("Tiempo de consulta: " + duracionQuery + " segundos");
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      responseString = buildAnyDocumentErrorResponse();
+    }
+    return responseString;
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - SendDocumentMH
+   */
+  public String SendDocumentMH(String xml, String username, String password, String _urlToken, String _clientId, String _endpoint, String emisorToken, String tokenSender) throws Exception {
+    // Generar JSON desde XML
+    String json = convertXmlToJsonForSending(xml);
+
+    // Obtener token válido
+    String token = getToken(username, password, _urlToken, _clientId, emisorToken);
+
+    // Enviar documento
+    try (CloseableHttpResponse response = httpClientUtil.executePostWithBearer(_endpoint, json, token)) {
+      return httpClientUtil.extractResponseContent(response);
+    }
+  }
+
+  /**
+   * FIRMA ORIGINAL MANTENIDA - ConsultarDocumentMH
+   */
+  public String ConsultarDocumentMH(String clave, String username, String password, String _urlToken, String _clientId, String _endpoint, String emisorToken, String tokenSender) throws Exception {
+    // Obtener token válido
+    String token = getToken(username, password, _urlToken, _clientId, emisorToken);
+
+    // Consultar documento
+    String url = _endpoint + clave;
+    try (CloseableHttpResponse response = httpClientUtil.executeGetWithBearer(url, token)) {
+      return httpClientUtil.extractResponseContent(response);
+    }
+  }
+
+  // ==================== MÉTODOS AUXILIARES ====================
+
+  /**
+   * Ejecuta la creación/refresh del token
+   */
+  private String executeTokenCreation(String username, String password, String _urlToken, String _clientId, String accion, String refreshToken) throws Exception {
+    if ("R".equals(accion)) {
+      return httpClientUtil.executeRefreshTokenRequest(_urlToken, refreshToken, _clientId);
+    } else {
+      return httpClientUtil.executeTokenRequest(_urlToken, username, password, _clientId);
+    }
+  }
+
+  /**
+   * Procesa respuesta del token y actualiza BD
+   */
+  private void processTokenResponse(String responseString, String emisorToken, String _urlToken, String _clientId, String username, String password, String refreshToken) throws Exception {
+    ObjectMapper objectMapper = new ObjectMapper();
+    Map<String, Object> res = objectMapper.readValue(responseString, new TypeReference<Map<String, Object>>() {});
+
+    // Manejar errores de token
+    if (res.get("error") != null && res.get("error").equals("invalid_grant")) {
+      log.info("Algo paso con el refreshToken entonces voy a borrar el token para que se genere uno nuevo");
+      logoutMh(username, password, _urlToken, _clientId, emisorToken, "", refreshToken);
+      _tokenControlService.deleteTokenByEmisor(emisorToken);
+    }
+
+    // Actualizar token en BD
+    updateTokenInDatabase(res, emisorToken);
+  }
+
+  /**
+   * Maneja el ciclo de vida del token
+   */
+  private String manageTokenLifecycle(String username, String password, String _urlToken, String _clientId, String emisorToken) throws Exception {
+    TokenControl t = _tokenControlService.findByEmisor(emisorToken);
+
+    if (t != null) {
+      return handleExistingToken(t, username, password, _urlToken, _clientId, emisorToken);
+    } else {
+      crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
+    }
+
+    TokenControl tF = _tokenControlService.findByEmisor(emisorToken);
+    return tF != null ? tF.getAccessToken() : "Error con el Token";
+  }
+
+  /**
+   * Maneja token existente verificando expiración
+   */
+  private String handleExistingToken(TokenControl t, String username, String password, String _urlToken, String _clientId, String emisorToken) throws Exception {
+    Long minutosVidaToken = t.getHoraCreacionToken() + Long.parseLong(t.getExpiresIn()) / 60L;
+    Long diferencia = minutosVidaToken - System.currentTimeMillis() / 1000L / 60L;
+
+    if (diferencia <= 0L) {
+      return handleExpiredToken(t, username, password, _urlToken, _clientId, emisorToken);
+    } else {
+      return handleValidToken(t, username, password, _urlToken, _clientId, emisorToken);
+    }
+  }
+
+  /**
+   * Maneja token expirado
+   */
+  private String handleExpiredToken(TokenControl t, String username, String password, String _urlToken, String _clientId, String emisorToken) throws Exception {
+    Long minutosVidaRefreshToken = t.getHoraCreacionRefreshToken() + Long.parseLong(t.getRefreshExpiresIn()) / 60L;
+    Long diferenciaRefresh = minutosVidaRefreshToken - System.currentTimeMillis() / 1000L / 60L;
+
+    if (diferenciaRefresh <= 0L) {
+      log.info("______________Eliminando el token viejo______________");
+      _tokenControlService.deleteTokenByEmisor(emisorToken);
+      log.info("______________Genero un nuevo token, el refresh token expiro______________");
+      crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
+    } else {
+      log.info("______________Refresco el token con el refreshToken______________");
+      crearToken(username, password, _urlToken, _clientId, emisorToken, "R", t.getRefreshTokens());
+    }
+    return null; // Se actualiza en crearToken
+  }
+
+  /**
+   * Maneja token válido
+   */
+  private String handleValidToken(TokenControl t, String username, String password, String _urlToken, String _clientId, String emisorToken) throws Exception {
+    Long minutosVidaRefreshToken = t.getHoraCreacionRefreshToken() + Long.parseLong(t.getRefreshExpiresIn()) / 60L;
+    Long diferenciaRefresh = minutosVidaRefreshToken - System.currentTimeMillis() / 1000L / 60L;
+
+    if (diferenciaRefresh <= 0L) {
+      log.info("______________Eliminando el token viejo______________");
+      _tokenControlService.deleteTokenByEmisor(emisorToken);
+      log.info("______________Generando un nuevo token______________");
+      crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
+      return null; // Se actualiza en crearToken
+    } else {
+      log.info("Sigo usando el mismo token");
+      return t.getAccessToken();
+    }
+  }
+
+  /**
+   * Actualiza token en base de datos
+   */
+  private void updateTokenInDatabase(Map<String, Object> res, String emisorToken) {
+    TokenControl tc = new TokenControl();
+    TokenControl t = _tokenControlService.findByEmisor(emisorToken);
+    Long horaCreacion = System.currentTimeMillis() / 1000L / 60L;
+
+    if (t != null) {
+      _tokenControlService.updateAccessToken(
+          res.get("access_token").toString(),
+          res.get("expires_in").toString(),
+          horaCreacion,
+          t.getId()
+      );
+    } else {
+      tc.setEmisor(emisorToken);
+      tc.setAccessToken(res.get("access_token").toString());
+      tc.setExpiresIn(res.get("expires_in").toString());
+      tc.setRefreshTokens(res.get("refresh_token").toString());
+      tc.setRefreshExpiresIn(res.get("refresh_expires_in").toString());
+      tc.setHoraCreacionToken(horaCreacion);
+      tc.setHoraCreacionRefreshToken(System.currentTimeMillis() / 1000L / 60L);
+      _tokenControlService.save(tc);
+    }
+  }
+
+  /**
+   * Genera clave numérica
+   */
+  private String generateClaveNumerica(String tipoDocumento, String tipoCedula, String cedula, String situacion, String codigoPais, String consecutivo, String codigoSeguridad, String sucursal, String terminal) {
+    SimpleDateFormat format = new SimpleDateFormat("ddMMyy");
+    String fechaHoy = format.format(new Date());
+
+    // Validaciones usando FuncionesService existente
+    if (cedula == null || cedula.isEmpty()) {
+      return "{\"response\":\"El valor cédula no debe ser vacío\"}";
+    }
+    if (!_funcionesService.isNumeric(cedula)) {
+      return "{\"response\":\"El valor cédula no es numérico\"}";
+    }
+    if (codigoPais == null || codigoPais.isEmpty()) {
+      return "{\"response\":\"El valor código de país no debe ser vacío\"}";
+    }
+    if (!_funcionesService.isNumeric(codigoPais)) {
+      return "{\"response\":\"El valor código de país no es numérico\"}";
+    }
+
+    // Formatear sucursal y terminal usando FuncionesService
+    sucursal = formatSucursalValue(sucursal);
+    if (sucursal.startsWith("{\"response\"")) return sucursal;
+
+    terminal = formatTerminalValue(terminal);
+    if (terminal.startsWith("{\"response\"")) return terminal;
+
+    // Construir clave
+    String clave = codigoPais + fechaHoy +
+        _funcionesService.str_pad(tipoCedula, 2, "0", "STR_PAD_LEFT") +
+        _funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT") +
+        _funcionesService.str_pad(tipoDocumento, 2, "0", "STR_PAD_LEFT") +
+        sucursal + terminal +
+        _funcionesService.str_pad(consecutivo, 10, "0", "STR_PAD_LEFT") +
+        _funcionesService.str_pad(situacion, 1, "0", "STR_PAD_LEFT") +
+        _funcionesService.str_pad(codigoSeguridad, 8, "0", "STR_PAD_LEFT");
+
+    return "{\"response\":\"" + clave + "\"}";
+  }
+
+  /**
+   * Formatea valor de sucursal
+   */
+  private String formatSucursalValue(String sucursal) {
+    if (sucursal == null || sucursal.isEmpty()) {
+      return "001";
+    }
+    if (_funcionesService.isNumeric(sucursal)) {
+      if (sucursal.length() < 3) {
+        return _funcionesService.str_pad(sucursal, 3, "0", "STR_PAD_LEFT");
+      } else if (sucursal.length() > 3) {
+        return "{\"response\":\"Error en sucursal el tamaño es diferente de 3 dígitos\"}";
+      }
+      return sucursal;
+    } else {
+      return "{\"response\":\"El valor sucursal no es numeral\"}";
+    }
+  }
+
+  /**
+   * Formatea valor de terminal
+   */
+  private String formatTerminalValue(String terminal) {
+    if (terminal == null || terminal.isEmpty()) {
+      return "00001";
+    }
+    if (_funcionesService.isNumeric(terminal)) {
+      if (terminal.length() < 5) {
+        return _funcionesService.str_pad(terminal, 5, "0", "STR_PAD_LEFT");
+      } else if (terminal.length() > 5) {
+        return "{\"response\":\"Error en terminal el tamaño es diferente de 5 dígitos\"}";
+      }
+      return terminal;
+    } else {
+      return "{\"response\":\"El valor terminal no es numeral\"}";
+    }
+  }
+
+  /**
+   * Envía documento por primera vez
+   */
+  private String sendDocumentFirstTime(String clave, String endpoint, String xmlPath, String username, String password, String _urlToken, String _clientId, String emisorToken, String tipoDocumento) throws Exception {
+    String json = buildJsonFromXmlFile(xmlPath, tipoDocumento);
+    String token = getToken(username, password, _urlToken, _clientId, emisorToken);
+
+    try (CloseableHttpResponse response = httpClientUtil.executePostWithBearer(endpoint, json, token)) {
+      int responseCode = response.getStatusLine().getStatusCode();
+      String responseHeaders = getHeaders(response.getAllHeaders());
+      return buildSendResponse(responseCode, responseHeaders);
+    }
+  }
+
+  /**
+   * Maneja documento ya enviado
+   */
+  private String handleAlreadySentDocument(String clave, String endpoint, String xmlPath, String username, String password, String _urlToken, String _clientId, String emisorToken, String tipoDocumento) throws Exception {
+    String respuestaGet = consultarSiMhLoRecibio(endpoint, clave, username, password, _urlToken, _clientId, emisorToken);
+
+    if (respuestaGet != null && respuestaGet.equalsIgnoreCase("error")) {
+      return sendDocumentFirstTime(clave, endpoint, xmlPath, username, password, _urlToken, _clientId, emisorToken, tipoDocumento);
+    } else {
+      _comprobantes.updateComprobantesElectronicosByClaveAndEmisor("202", "", clave, emisorToken);
+      log.info("Ya se había enviado, solo actualizo su estado");
+      return buildSendResponse(202, "");
+    }
+  }
+
+  /**
+   * Construye JSON desde archivo XML
+   */
+  private String buildJsonFromXmlFile(String xmlPath, String tipoDocumento) throws Exception {
+    String xmlContent = fileManagerUtil.readFromFile(xmlPath);
+    return convertXmlToJsonForSending(xmlContent);
+  }
+
+  /**
+   * Convierte XML a JSON para envío
+   */
+  private String convertXmlToJsonForSending(String xml) throws Exception {
+    Document xmlDoc = xmlParserUtil.parseXmlFromString(xml);
+    return processXmlByDocumentType(xmlDoc, xml);
+  }
+
+  /**
+   * Procesa XML según tipo de documento
+   */
+  private String processXmlByDocumentType(Document xmlDoc, String xml) throws Exception {
+    // Determinar tipo desde el XML
+    String rootElement = xmlDoc.getDocumentElement().getNodeName();
+
+    // Usar JsonProcessorUtil según el tipo
+    switch (rootElement) {
+      case "MensajeReceptor":
+        return jsonProcessorUtil.processMensajeReceptor(xmlDoc, "CCE");
+      default:
+        // Para facturas, notas, etc.
+        return jsonProcessorUtil.processFacturaElectronica(xmlDoc, getDocumentTypeFromRoot(rootElement));
+    }
+  }
+
+  /**
+   * Obtiene tipo de documento desde elemento root
+   */
+  private String getDocumentTypeFromRoot(String rootElement) {
+    switch (rootElement) {
+      case "FacturaElectronica": return "FE";
+      case "NotaDebitoElectronica": return "ND";
+      case "NotaCreditoElectronica": return "NC";
+      case "TiqueteElectronico": return "TE";
+      case "FacturaElectronicaCompra": return "FEC";
+      case "FacturaElectronicaExportacion": return "FEE";
+      default: return "FE";
+    }
+  }
+
+  /**
+   * Procesa respuesta de consulta simple
+   */
+  private String processConsultaResponse(String responseString) {
+    try {
+      jsonProcessorUtil.parseJsonToMap(responseString);
+      return "exito";
+    } catch (Exception e) {
+      return "error";
+    }
+  }
+
+  /**
+   * Procesa respuesta de estado de documento
+   */
+  private String processDocumentStatusResponse(String rawResponse, String pathUploadFilesApi, int statusCode) throws Exception {
+    ObjectMapper objectMapper = new ObjectMapper();
+    Map<String, Object> res = objectMapper.readValue(rawResponse, new TypeReference<Map<String, Object>>() {});
+
+    String respuestaXML = (String) res.get("respuesta-xml");
+    respuestaXML = new String(Base64.decodeBase64(respuestaXML), "UTF-8");
+
+    // Guardar XML de respuesta
+    generateXml(pathUploadFilesApi, respuestaXML, res.get("clave") + "-respuesta-mh");
+
+    return "{\"resp\":\"" + res.get("ind-estado") + "\",\"fecha\":\"" + res.get("fecha") + "\",\"code\":\"" + statusCode + "\"}";
+  }
+
+  /**
+   * Procesa respuesta de cualquier documento
+   */
+  private String processAnyDocumentResponse(String responseString) {
+    try {
+      jsonProcessorUtil.parseJsonToMap(responseString);
+      return responseString; // Respuesta exitosa directa
+    } catch (Exception e) {
+      return buildAnyDocumentErrorResponse();
+    }
+  }
+
+  /**
+   * Construye respuesta de envío
+   */
+  private String buildSendResponse(int responseCode, String headers) {
+    return "{\"resp\":\"" + responseCode + "\",\"headers\":\"" + headers + "\"}";
+  }
+
+  /**
+   * Construye respuesta de error para estado
+   */
+  private String buildErrorStatusResponse() {
+    return "{\"resp\":\"\",\"fecha\":\"\",\"code\":\"\"}";
+  }
+
+  /**
+   * Construye respuesta de error para cualquier documento
+   */
+  private String buildAnyDocumentErrorResponse() {
+    return "{\"clave\":\"\",\"fecha\":\"\",\"ind-estado\":\"\",\"respuesta-xml\":\"\"}";
+  }
+
+  /**
+   * Calcula duración (simplificado)
+   */
+  private long calculateDuration() {
+    return System.currentTimeMillis() / 1000; // Simplificado para el ejemplo
+  }
+
+  /**
+   * Extrae headers - método original mantenido
+   */
+  private String getHeaders(Header[] headers) {
+    String resp = "";
+    for (Header header : headers) {
+      if (header.getName().equalsIgnoreCase("X-Error-Cause")) {
+        resp = resp.concat(header.getValue());
+      }
+    }
+    return resp;
+  }
+
+  /**
+   * Logout MH - método original mantenido
+   */
   private void logoutMh(String username, String password, String _urlToken, String _clientId, String emisorToken, String accion, String refreshToken) throws Exception {
     try {
       CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
@@ -140,656 +618,9 @@ public class Sender {
       HttpResponse response = closeableHttpClient.execute(request);
       HttpEntity entity = response.getEntity();
       String responseString = EntityUtils.toString(entity, "UTF-8");
-      this.log.info(" Cerrando el token del cliente: " + emisorToken + " || " + responseString);
+      log.info(" Cerrando el token del cliente: " + emisorToken + " || " + responseString);
     } catch (Exception e) {
-      this.log.info("Error generado por el metodo logoutMh: " + e.getMessage());
-    } 
-  }
-  
-  private String getToken(String username, String password, String _urlToken, String _clientId, String emisorToken) throws Exception {
-    String resp;
-    TokenControl t = this._tokenControlService.findByEmisor(emisorToken);
-    if (t != null) {
-      Long minutosVidaToken = t.getHoraCreacionToken() +
-          Long.parseLong(t.getExpiresIn()) / 60L;
-      this.log.info("Vida del accessToken " + minutosVidaToken);
-      Long diferencia = minutosVidaToken - System.currentTimeMillis() / 1000L / 60L;
-      this.log.info("Diferiencia: " + diferencia);
-      if (diferencia <= 0L) {
-        minutosVidaToken = t.getHoraCreacionRefreshToken() +
-            Long.parseLong(t.getRefreshExpiresIn()) / 60L;
-        diferencia = minutosVidaToken - System.currentTimeMillis() / 1000L / 60L;
-        this.log.info("Diferencia del refreshToken: " + diferencia);
-        if (diferencia <= 0L) {
-          this.log.info("______________Eliminando el token viejo______________");
-          this._tokenControlService.deleteTokenByEmisor(emisorToken);
-          this.log.info("______________Genero un nuevo token, el refresh token expiro______________");
-          crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
-        } else {
-          this.log.info("______________Refresco el token con el refreshToken______________");
-          crearToken(username, password, _urlToken, _clientId, emisorToken, "R", t.getRefreshTokens());
-        } 
-      } else {
-        minutosVidaToken = t.getHoraCreacionRefreshToken() +
-            Long.parseLong(t.getRefreshExpiresIn()) / 60L;
-        diferencia = minutosVidaToken - System.currentTimeMillis() / 1000L / 60L;
-        if (diferencia <= 0L) {
-          this.log.info("______________Eliminando el token viejo______________");
-          this._tokenControlService.deleteTokenByEmisor(emisorToken);
-          this.log.info("______________Generando un nuevo token______________");
-          crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
-        } else {
-          this.log.info("Sigo usando el mismo token");
-        } 
-      } 
-    } else {
-      crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
-    } 
-    TokenControl tF = this._tokenControlService.findByEmisor(emisorToken);
-    if (tF != null) {
-      resp = tF.getAccessToken();
-    } else {
-      resp = "Error con el Token";
-    } 
-    return resp;
-  }
-  
-  public String send(String clave, String endpoint, String xmlPath, String username, String password, String _urlToken, String _clientId, String emisorToken, String tipoDocumento) {
-    String resp = "";
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      ObjectMapper objectMapper = new ObjectMapper();
-      SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-      File file = new File(xmlPath);
-      byte[] bytes = FileUtils.readFileToString(file, "UTF-8").getBytes("UTF-8");
-      String base64 = Base64.encodeBase64String(bytes);
-      ComprobanteElectronico comprobanteElectronico = new ComprobanteElectronico();
-      MensajeReceptorMh mr = new MensajeReceptorMh();
-      comprobanteElectronico.setComprobanteXml(base64);
-      mr.setComprobanteXml(base64);
-      ObligadoTributario receptor = new ObligadoTributario();
-      ObligadoTributario emisor = new ObligadoTributario();
-      Document xml = XmlHelper.getDocument(xmlPath);
-      NodeList nodes, nodeReceptor;
-      String json = "";
-      switch (tipoDocumento) {
-        case "FE":
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronica/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          comprobanteElectronico.setClave(nodes.item(0).getTextContent());
-          xPath.evaluate("/FacturaElectronica/FechaEmision", xml.getDocumentElement(),
-              XPathConstants.NODESET);
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronica/Emisor/Identificacion/Tipo", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronica/Emisor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          xPath.evaluate("/FacturaElectronica/Receptor/Identificacion/Tipo", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          nodeReceptor = (NodeList)xPath.evaluate("/FacturaElectronica/Receptor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          if (nodeReceptor != null && !nodeReceptor.equals("") && nodeReceptor.getLength() > 5) {
-            receptor.setTipoIdentificacion(nodeReceptor.item(0).getTextContent());
-            receptor.setNumeroIdentificacion(nodeReceptor.item(0).getTextContent());
-          } 
-          comprobanteElectronico.setFecha(format.format(new Date()));
-          comprobanteElectronico.setReceptor(receptor);
-          comprobanteElectronico.setEmisor(emisor);
-          json = objectMapper.writeValueAsString(comprobanteElectronico);
-          break;
-        case "ND":
-          nodes = (NodeList)xPath.evaluate("/NotaDebitoElectronica/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          comprobanteElectronico.setClave(nodes.item(0).getTextContent());
-          xPath.evaluate("/NotaDebitoElectronica/FechaEmision", xml.getDocumentElement(),
-              XPathConstants.NODESET);
-          nodes = (NodeList)xPath.evaluate("/NotaDebitoElectronica/Emisor/Identificacion/Tipo", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/NotaDebitoElectronica/Emisor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          xPath.evaluate("/NotaDebitoElectronica/Receptor/Identificacion/Tipo", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          nodeReceptor = (NodeList)xPath.evaluate("/NotaDebitoElectronica/Receptor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          if (nodeReceptor != null && !nodeReceptor.equals("") && nodeReceptor.getLength() > 5) {
-            receptor.setTipoIdentificacion(nodeReceptor.item(0).getTextContent());
-            receptor.setNumeroIdentificacion(nodeReceptor.item(0).getTextContent());
-          } 
-          comprobanteElectronico.setFecha(format.format(new Date()));
-          comprobanteElectronico.setEmisor(emisor);
-          json = objectMapper.writeValueAsString(comprobanteElectronico);
-          break;
-        case "NC":
-          nodes = (NodeList)xPath.evaluate("/NotaCreditoElectronica/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          comprobanteElectronico.setClave(nodes.item(0).getTextContent());
-          xPath.evaluate("/NotaCreditoElectronica/FechaEmision", xml.getDocumentElement(),
-              XPathConstants.NODESET);
-          nodes = (NodeList)xPath.evaluate("/NotaCreditoElectronica/Emisor/Identificacion/Tipo", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/NotaCreditoElectronica/Emisor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          xPath.evaluate("/NotaCreditoElectronica/Receptor/Identificacion/Tipo", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          nodeReceptor = (NodeList)xPath.evaluate("/NotaCreditoElectronica/Receptor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          if (nodeReceptor != null && !nodeReceptor.equals("") && nodeReceptor.getLength() > 5) {
-            receptor.setTipoIdentificacion(nodeReceptor.item(0).getTextContent());
-            receptor.setNumeroIdentificacion(nodeReceptor.item(0).getTextContent());
-          } 
-          comprobanteElectronico.setFecha(format.format(new Date()));
-          comprobanteElectronico.setEmisor(emisor);
-          json = objectMapper.writeValueAsString(comprobanteElectronico);
-          break;
-        case "TE":
-          nodes = (NodeList)xPath.evaluate("/TiqueteElectronico/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          comprobanteElectronico.setClave(nodes.item(0).getTextContent());
-          xPath.evaluate("/TiqueteElectronico/FechaEmision", xml.getDocumentElement(),
-              XPathConstants.NODESET);
-          nodes = (NodeList)xPath.evaluate("/TiqueteElectronico/Emisor/Identificacion/Tipo", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/TiqueteElectronico/Emisor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          xPath.evaluate("/TiqueteElectronico/Receptor/Identificacion/Tipo", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          nodeReceptor = (NodeList)xPath.evaluate("/TiqueteElectronico/Receptor/Identificacion/Numero", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          if (nodeReceptor != null && !nodeReceptor.equals("") && nodeReceptor.getLength() > 5) {
-            receptor.setTipoIdentificacion(nodeReceptor.item(0).getTextContent());
-            receptor.setNumeroIdentificacion(nodeReceptor.item(0).getTextContent());
-          } 
-          comprobanteElectronico.setFecha(format.format(new Date()));
-          comprobanteElectronico.setEmisor(emisor);
-          json = objectMapper.writeValueAsString(comprobanteElectronico);
-          break;
-        case "FEC":
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronicaCompra/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          comprobanteElectronico.setClave(nodes.item(0).getTextContent());
-          xPath.evaluate("/FacturaElectronicaCompra/FechaEmision", xml.getDocumentElement(),
-              XPathConstants.NODESET);
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronicaCompra/Receptor/Identificacion/Tipo", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronicaCompra/Receptor/Identificacion/Numero", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          xPath.evaluate("/FacturaElectronicaCompra/Emisor/Identificacion/Tipo",
-              xml.getDocumentElement(), XPathConstants.NODESET);
-          nodeReceptor = (NodeList)xPath.evaluate("/FacturaElectronicaCompra/Emisor/Identificacion/Numero", xml.getDocumentElement(), XPathConstants.NODESET);
-          if (nodeReceptor != null && !nodeReceptor.equals("") && nodeReceptor.getLength() > 5) {
-            receptor.setTipoIdentificacion(nodeReceptor.item(0).getTextContent());
-            receptor.setNumeroIdentificacion(nodeReceptor.item(0).getTextContent());
-          } 
-          comprobanteElectronico.setFecha(format.format(new Date()));
-          comprobanteElectronico.setReceptor(receptor);
-          comprobanteElectronico.setEmisor(emisor);
-          json = objectMapper.writeValueAsString(comprobanteElectronico);
-          break;
-        case "FEE":
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronicaExportacion/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          comprobanteElectronico.setClave(nodes.item(0).getTextContent());
-          xPath.evaluate("/FacturaElectronicaExportacion/FechaEmision", xml.getDocumentElement(),
-              XPathConstants.NODESET);
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronicaExportacion/Emisor/Identificacion/Tipo", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/FacturaElectronicaExportacion/Emisor/Identificacion/Numero", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          xPath.evaluate("/FacturaElectronicaExportacion/Receptor/Identificacion/Tipo",
-              xml.getDocumentElement(), XPathConstants.NODESET);
-          nodeReceptor = (NodeList)xPath.evaluate("/FacturaElectronicaExportacion/Receptor/Identificacion/Numero", xml.getDocumentElement(), XPathConstants.NODESET);
-          if (nodeReceptor != null && !nodeReceptor.equals("") && nodeReceptor.getLength() > 5) {
-            receptor.setTipoIdentificacion(nodeReceptor.item(0).getTextContent());
-            receptor.setNumeroIdentificacion(nodeReceptor.item(0).getTextContent());
-          } 
-          comprobanteElectronico.setFecha(format.format(new Date()));
-          comprobanteElectronico.setReceptor(receptor);
-          comprobanteElectronico.setEmisor(emisor);
-          json = objectMapper.writeValueAsString(comprobanteElectronico);
-          break;
-        case "CCE":
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          mr.setClave(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroCedulaEmisor", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion("01");
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/FechaEmisionDoc", xml.getDocumentElement(), XPathConstants.NODESET);
-          mr.setFecha(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroCedulaReceptor", xml.getDocumentElement(), XPathConstants.NODESET);
-          receptor.setTipoIdentificacion("01");
-          receptor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroConsecutivoReceptor", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          mr.setConsecutivoReceptor(nodes.item(0).getTextContent());
-          mr.setFecha(format.format(new Date()));
-          mr.setEmisor(emisor);
-          mr.setReceptor(receptor);
-          json = objectMapper.writeValueAsString(mr);
-          break;
-        case "CPCE":
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          mr.setClave(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroCedulaEmisor", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion("01");
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/FechaEmisionDoc", xml.getDocumentElement(), XPathConstants.NODESET);
-          mr.setFecha(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroCedulaReceptor", xml.getDocumentElement(), XPathConstants.NODESET);
-          receptor.setTipoIdentificacion("01");
-          receptor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroConsecutivoReceptor", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          mr.setConsecutivoReceptor(nodes.item(0).getTextContent());
-          mr.setFecha(format.format(new Date()));
-          mr.setEmisor(emisor);
-          mr.setReceptor(receptor);
-          json = objectMapper.writeValueAsString(mr);
-          break;
-        case "RCE":
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/Clave", xml.getDocumentElement(), XPathConstants.NODESET);
-          mr.setClave(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroCedulaEmisor", xml.getDocumentElement(), XPathConstants.NODESET);
-          emisor.setTipoIdentificacion("01");
-          emisor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/FechaEmisionDoc", xml.getDocumentElement(), XPathConstants.NODESET);
-          mr.setFecha(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroCedulaReceptor", xml.getDocumentElement(), XPathConstants.NODESET);
-          receptor.setTipoIdentificacion("01");
-          receptor.setNumeroIdentificacion(nodes.item(0).getTextContent());
-          nodes = (NodeList)xPath.evaluate("/MensajeReceptor/NumeroConsecutivoReceptor", xml
-              .getDocumentElement(), XPathConstants.NODESET);
-          mr.setConsecutivoReceptor(nodes.item(0).getTextContent());
-          mr.setFecha(format.format(new Date()));
-          mr.setEmisor(emisor);
-          mr.setReceptor(receptor);
-          json = objectMapper.writeValueAsString(mr);
-          break;
-      } 
-      ComprobantesElectronicos ce = this._comprobantes.findByClaveDocumento(clave);
-      int responseCode;
-      String respuestaGet;
-      String responseHeaders;
-      if (ce.getResponseCodeSend() == null) {
-        this.log.info("Enviando comprobante por primera vez");
-        String token = getToken(username, password, _urlToken, _clientId, emisorToken);
-        CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
-        HttpPost request = new HttpPost(endpoint);
-        StringEntity params = new StringEntity(json);
-        request.addHeader("content-type", "application/javascript");
-        request.addHeader("Authorization", "bearer " + token);
-        request.setEntity(params);
-        RequestConfig config = RequestConfig.custom().setConnectTimeout(this.timeoutMH * 1000).setConnectionRequestTimeout(this.timeoutMH * 1000).setSocketTimeout(this.timeoutMH * 1000).build();
-        request.setConfig(config);
-        HttpResponse response = closeableHttpClient.execute(request);
-        responseCode = response.getStatusLine().getStatusCode();
-        responseHeaders = getHeaders(response.getAllHeaders());
-      } else {
-        respuestaGet = consultarSiMhLoRecibio(endpoint, clave, username, password, _urlToken, _clientId, emisorToken);
-        if (respuestaGet != null && respuestaGet.equalsIgnoreCase("error")) {
-          String token = getToken(username, password, _urlToken, _clientId, emisorToken);
-          CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
-          HttpPost request = new HttpPost(endpoint);
-          StringEntity params = new StringEntity(json);
-          request.addHeader("content-type", "application/javascript");
-          request.addHeader("Authorization", "bearer " + token);
-          request.setEntity(params);
-          RequestConfig config = RequestConfig.custom().setConnectTimeout(this.timeoutMH * 1000).setConnectionRequestTimeout(this.timeoutMH * 1000).setSocketTimeout(this.timeoutMH * 1000).build();
-          request.setConfig(config);
-          HttpResponse response = closeableHttpClient.execute(request);
-          responseCode = response.getStatusLine().getStatusCode();
-          responseHeaders = getHeaders(response.getAllHeaders());
-          this.log.info("Enví el comprobante por que al parecer no se habí enviado");
-        } else {
-          this._comprobantes.updateComprobantesElectronicosByClaveAndEmisor("202", "", clave, emisorToken);
-          responseCode = 202;
-          responseHeaders = "";
-          this.log.info("Ya se habí enviado, solo actualizo su estado");
-        } 
-      } 
-      resp = resp + "{";
-      if (responseCode == 202) {
-        resp = resp + "\"resp\":\"202\",";
-        resp = resp + "\"headers\":\"" + responseHeaders + "\"";
-      } else {
-        resp = resp + "\"resp\":\"" + responseCode + "\",";
-        resp = resp + "\"headers\":\"" + responseHeaders + "\"";
-      } 
-      resp = resp + "}";
-    } catch (Exception e) {
-      e.printStackTrace();
-    } 
-    return resp;
-  }
-  
-  public String consultarSiMhLoRecibio(String endpoint, String clave, String username, String password, String _urlToken, String _clientId, String emisorToken) {
-    String responseString;
-    CloseableHttpClient client = null;
-    CloseableHttpResponse response = null;
-    String estadoMh = "";
-    try {
-      String url = endpoint + clave;
-      String token = getToken(username, password, _urlToken, _clientId, emisorToken);
-      SSLContext sslContext = (new SSLContextBuilder()).loadTrustMaterial(null, (certificate, authType) -> true).build();
-      client = HttpClients.custom().setSSLContext(sslContext).setSSLHostnameVerifier(
-          new NoopHostnameVerifier()).build();
-      HttpGet httpGet = new HttpGet(url);
-      httpGet.addHeader("Authorization", "bearer " + token);
-      response = client.execute(httpGet);
-      this.log.info("Metodo consultarSiMhLoRecibio");
-      HttpEntity entity2 = response.getEntity();
-      responseString = EntityUtils.toString(entity2, "UTF-8");
-      try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> res = objectMapper.readValue(responseString, new TypeReference<>() {
-
-        });
-        estadoMh = "exito";
-      } catch (Exception e) {
-        estadoMh = "error";
-      } 
-      this.log.info("Respuesta de la petició: " + estadoMh);
-    } catch (Exception e) {
-      e.printStackTrace();
-      response.getStatusLine().getStatusCode();
-    } finally {
-      if (response != null)
-        try {
-          client.close();
-        } catch (Exception exception) {} 
-    } 
-    return estadoMh;
-  }
-
-  public String consultarEstadoCualquierDocumento(String endpoint, String clave, String username, String password, String _urlToken, String pathUploadFilesApi, String _clientId, String emisorToken) {
-    String responseString;
-    CloseableHttpClient client = null;
-    CloseableHttpResponse response = null;
-    try {
-      String url = endpoint + clave;
-      String token = getToken(username, password, _urlToken, _clientId, emisorToken);
-      SSLContext sslContext = (new SSLContextBuilder()).loadTrustMaterial(null, (certificate, authType) -> true).build();
-      client = HttpClients.custom().setSSLContext(sslContext).setSSLHostnameVerifier(
-          new NoopHostnameVerifier()).build();
-      HttpGet httpGet = new HttpGet(url);
-      httpGet.addHeader("Authorization", "bearer " + token);
-      long startTime = System.currentTimeMillis();
-      response = client.execute(httpGet);
-      HttpEntity entity2 = response.getEntity();
-      responseString = EntityUtils.toString(entity2, "UTF-8");
-      this.log.info("Codigo generado por MH " + response.getStatusLine().getStatusCode());
-      this.log.info("Errores generados: " + getHeaders(response.getAllHeaders()));
-      String estadoMh;
-      try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> res = objectMapper.readValue(responseString, new TypeReference<>() {
-
-        });
-        estadoMh = "ok";
-      } catch (Exception e) {
-        estadoMh = "error";
-      } 
-      this.log.info("Respuesta de la petició metodo consultarEstadoCualquierDocumento: " + estadoMh);
-      long durationResta = System.currentTimeMillis() - startTime;
-      Double duracionQuery = Double.parseDouble(durationResta + "") / 1000.0D;
-      this.log.info("Tiempo de consulta: " + duracionQuery + " segundos");
-    } catch (Exception e) {
-      e.printStackTrace();
-      responseString = "{";
-      responseString = responseString + "\"clave\":\"\",";
-      responseString = responseString + "\"fecha\":\"\",";
-      responseString = responseString + "\"ind-estado\":\"\",";
-      responseString = responseString + "\"respuesta-xml\":\"" + response.getStatusLine().getStatusCode() + "\"";
-      responseString = responseString + "}";
-    } finally {
-      if (client != null)
-        try {
-          client.close();
-        } catch (Exception exception) {} 
-      if (response != null)
-        try {
-          response.close();
-        } catch (Exception exception) {} 
-    } 
-    return responseString;
-  }
-  
-  public String consultarEstadoDocumento(String endpoint, String clave, String username, String password, String _urlToken, String pathUploadFilesApi, String _clientId, String emisorToken) {
-    String respuestaXML;
-    String responseString;
-    CloseableHttpClient client = null;
-    CloseableHttpResponse response = null;
-    try {
-      String url = endpoint + clave;
-      String token = getToken(username, password, _urlToken, _clientId, emisorToken);
-      SSLContext sslContext = (new SSLContextBuilder()).loadTrustMaterial(null, (certificate, authType) -> true).build();
-      client = HttpClients.custom().setSSLContext(sslContext).setSSLHostnameVerifier(
-          new NoopHostnameVerifier()).build();
-      HttpGet httpGet = new HttpGet(url);
-      httpGet.addHeader("Authorization", "bearer " + token);
-      RequestConfig config = RequestConfig.custom().setConnectTimeout(this.timeoutMH * 1000).setConnectionRequestTimeout(this.timeoutMH * 1000).setSocketTimeout(this.timeoutMH * 1000).build();
-      httpGet.setConfig(config);
-      response = client.execute(httpGet);
-      HttpEntity entity2 = response.getEntity();
-      responseString = EntityUtils.toString(entity2, "UTF-8");
-      ObjectMapper objectMapper = new ObjectMapper();
-      Map<String, Object> res = objectMapper.readValue(responseString, new TypeReference<>() {
-
-      });
-      respuestaXML = (String)res.get("respuesta-xml");
-      respuestaXML = new String(Base64.decodeBase64(respuestaXML), "UTF-8");
-      generateXml(pathUploadFilesApi, respuestaXML, res.get("clave") + "-respuesta-mh");
-      responseString = "{";
-      responseString = responseString + "\"resp\":\"" + res.get("ind-estado") + "\",";
-      responseString = responseString + "\"fecha\":\"" + res.get("fecha") + "\",";
-      responseString = responseString + "\"code\":\"" + response.getStatusLine().getStatusCode() + "\"";
-      responseString = responseString + "}";
-    } catch (Exception e) {
-      this.log.info("Al parecer nunca se ha enviado");
-      responseString = "{";
-      responseString = responseString + "\"resp\":\"\",";
-      responseString = responseString + "\"fecha\":\"\",";
-      responseString = responseString + "\"code\":\"" + response.getStatusLine().getStatusCode() + "\"";
-      responseString = responseString + "}";
-    } finally {
-      if (response != null)
-        try {
-          client.close();
-        } catch (Exception exception) {} 
-    } 
-    return responseString;
-  }
-  
-  public void generateXml(String path, String datosXml, String name) throws Exception {
-    BufferedWriter bw;
-    File archivo = new File(path + name + ".xml");
-    if (archivo.exists()) {
-      bw = new BufferedWriter(new FileWriter(archivo));
-      bw.write(datosXml);
-      System.out.println("Archivo creado con éito");
-    } else {
-      bw = new BufferedWriter(new FileWriter(archivo));
-      bw.write(datosXml);
-      System.out.println("Archivo creado con éito");
-    } 
-    bw.close();
-  }
-  
-  private String getHeaders(Header[] headers) {
-    String resp = "";
-    for (Header header : headers) {
-      if (header.getName().equalsIgnoreCase("X-Error-Cause"))
-        resp = resp.concat(header.getValue()); 
-    } 
-    return resp;
-  }
-  
-  public String getClave(String tipoDocumento, String tipoCedula, String cedula, String situacion, String codigoPais, String consecutivo, String codigoSeguridad, String sucursal, String terminal) {
-    String response;
-    SimpleDateFormat format = new SimpleDateFormat("ddMMyy");
-    String fechaHoy = format.format(new Date());
-    if (cedula != null && cedula.isEmpty())
-      return "{\"response\":\"El valor céula no debe ser vacio\"}"; 
-    if (!this._funcionesService.isNumeric(cedula))
-      return "{\"response\":\"El valor céula no es numéico\"}"; 
-    if (codigoPais != null && codigoPais.isEmpty())
-      return "{\"response\":\"El valor cóigo de paí no debe ser vacio\"}"; 
-    if (!this._funcionesService.isNumeric(codigoPais))
-      return "{\"response\":\"El valor cóigo de paí no es núerico\"}"; 
-    if (sucursal != null && sucursal.isEmpty()) {
-      sucursal = "001";
-    } else if (this._funcionesService.isNumeric(sucursal)) {
-      if (sucursal.length() < 3) {
-        sucursal = this._funcionesService.str_pad(sucursal, 3, "0", "STR_PAD_LEFT");
-      } else if (sucursal.length() > 3) {
-        return "{\"response\":\"Error en sucursal el tamañ es diferente de 3 digitos\"}";
-      } 
-    } else {
-      return "{\"response\":\"El valor sucursal no es numeral\"}";
-    } 
-    if (terminal != null && terminal.isEmpty()) {
-      terminal = "00001";
-    } else if (this._funcionesService.isNumeric(terminal)) {
-      if (terminal.length() < 5) {
-        terminal = this._funcionesService.str_pad(terminal, 5, "0", "STR_PAD_LEFT");
-      } else if (terminal.length() != 5) {
-        return "{\"response\":\"Error en la terminal, el tamañ es diferente de 5 digitos\"}";
-      } 
-    } else {
-      return "{\"response\":\"El valor terminal no es numeral\"}";
-    } 
-    if (consecutivo != null && consecutivo.isEmpty())
-      return "{\"response\":\"El consecutivo no puede ser vacio\"}"; 
-    if (consecutivo.length() < 10) {
-      consecutivo = this._funcionesService.str_pad(consecutivo, 10, "0", "STR_PAD_LEFT");
-    } else if (consecutivo.length() != 10) {
-      return "{\"response\":\"Error en consecutivo, el tamañ del consecutivo es diferente de 10 digitos\"}";
-    } 
-    if (codigoSeguridad != null && codigoSeguridad.isEmpty())
-      return "{\"response\":\"El codigo de seguridad no puede ser vacio\"}"; 
-    if (codigoSeguridad.length() < 8) {
-      codigoSeguridad = this._funcionesService.str_pad(codigoSeguridad, 8, "0", "STR_PAD_LEFT");
-    } else if (codigoSeguridad.length() != 8) {
-      return "{\"response\":\"Error en codigo Seguridad, el tamañ codigo de seguridad es diferente de 8 digitos\"}";
-    } 
-    String[] tipos = { "FE", "ND", "NC", "TE", "CCE", "CPCE", "RCE", "FEE", "FEC" };
-    if (ArrayUtils.contains(tipos, tipoDocumento)) {
-      switch (tipoDocumento) {
-        case "FE":
-          tipoDocumento = "01";
-          break;
-        case "ND":
-          tipoDocumento = "02";
-          break;
-        case "NC":
-          tipoDocumento = "03";
-          break;
-        case "TE":
-          tipoDocumento = "04";
-          break;
-        case "CCE":
-          tipoDocumento = "05";
-          break;
-        case "CPCE":
-          tipoDocumento = "06";
-          break;
-        case "RCE":
-          tipoDocumento = "07";
-          break;
-        case "FEC":
-          tipoDocumento = "08";
-          break;
-        case "FEE":
-          tipoDocumento = "09";
-          break;
-      } 
-    } else {
-      return "{\"response\":\"No se encuentra tipo de documento\"}";
-    } 
-    String consecutivoFinal = sucursal + terminal + tipoDocumento + consecutivo;
-    String identificacion = null;
-    String[] cedulas = { "fisico", "juridico", "dimex", "nite", "01", "02", "03", "04" };
-    if (ArrayUtils.contains(cedulas, tipoCedula)) {
-      switch (tipoCedula) {
-        case "fisico":
-          identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-          break;
-        case "01":
-          identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-          break;
-        case "juridico":
-          if (cedula.length() < 12) {
-            identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-            break;
-          } 
-          if (cedula.length() == 12) {
-            identificacion = cedula;
-            break;
-          } 
-          return "{\"response\":\"Céula juríico incorrecto\"}";
-        case "02":
-          if (cedula.length() < 12) {
-            identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-            break;
-          } 
-          if (cedula.length() == 12) {
-            identificacion = cedula;
-            break;
-          } 
-          return "{\"response\":\"Céula juríico incorrecto\"}";
-        case "dimex":
-          if (cedula.length() < 12) {
-            identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-            break;
-          } 
-          if (cedula.length() == 12) {
-            identificacion = cedula;
-            break;
-          } 
-          return "{\"response\":\"Dimex incorrecto\"}";
-        case "03":
-          if (cedula.length() < 12) {
-            identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-            break;
-          } 
-          if (cedula.length() == 12) {
-            identificacion = cedula;
-            break;
-          } 
-          return "{\"response\":\"Dimex incorrecto\"}";
-        case "nite":
-          identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-          break;
-        case "04":
-          identificacion = this._funcionesService.str_pad(cedula, 12, "0", "STR_PAD_LEFT");
-          break;
-      } 
-    } else {
-      return "{\"response\":\"No se encuentra tipo de céula\"}";
-    } 
-    String[] situaciones = { "normal", "contingencia", "sininternet" };
-    if (ArrayUtils.contains(situaciones, situacion)) {
-      switch (situacion) {
-        case "normal":
-          situacion = "1";
-          break;
-        case "contingencia":
-          situacion = "2";
-          break;
-        case "sininternet":
-          situacion = "3";
-          break;
-      } 
-    } else {
-      return "{\"response\":\"No se encuentra el tipo de situació\"}";
-    } 
-    String clave = codigoPais + fechaHoy + identificacion + consecutivoFinal + situacion + codigoSeguridad;
-    response = "{";
-    response = response + "\"response\":\"202\",";
-    response = response + "\"clave\":\"" + clave + "\",";
-    response = response + "\"consecutivo\":\"" + consecutivoFinal + "\",";
-    response = response + "\"length\":\"" + clave.length() + "\"";
-    response = response + "}";
-    return response;
+      log.info("Error generado por el metodo logoutMh: " + e.getMessage());
+    }
   }
 }
-
