@@ -28,39 +28,39 @@ spring:
           writetimeout: 5000
     debug: true
 
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+server:
+  port: 8080
 
-#################################################################
-### Dominio Aplicaci
-spring.jmx.default-domain: API FE Samyx v1.0
+correo:
+  de:
+    distribucion: fe@samyx.digital
+  no:
+    reply: fe@samyx.digital
 
-#################################################################
-### Puerto de la Aplicaci
-server.port=8080
+path:
+  upload:
+    files:
+      api: /home/XmlClientes/
 
-#################################################################
+endpoint:
+  prod: https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/
+  stag: https://api.comprobanteselectronicos.go.cr/recepcion-sandbox/v1/recepcion/
 
-spring.mail.host=smtp.office365.com
-spring.mail.port=587
-spring.mail.username=fe@simplestudio.app
-spring.mail.password=?EbyA:)Sh+S=*5G
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-correo.de.distribucion=fe@simplestudio.app
-correo.no.reply=fe@simplestudio.app
+token:
+  prod: https://idp.comprobanteselectronicos.go.cr/auth/realms/rut/protocol/openid-connect/
+  stag: https://idp.comprobanteselectronicos.go.cr/auth/realms/rut-stag/protocol/openid-connect/
 
-#################################################################
-### Carpeta de archivos en en ambiente de producci
-path.upload.files.api = /home/XmlClientes/
+url:
+  qr: ""
 
-#################################################################
-### ConfiguraciAPI MH
-endpoint.prod = https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/
-endpoint.stag = https://api.comprobanteselectronicos.go.cr/recepcion-sandbox/v1/recepcion/
-token.prod = https://idp.comprobanteselectronicos.go.cr/auth/realms/rut/protocol/openid-connect/
-token.stag = https://idp.comprobanteselectronicos.go.cr/auth/realms/rut-stag/protocol/openid-connect/
-
-#################################################################
-### DirecciQR para la consulta de documentos y descarga de XML.
-url.qr = 
+cloud:
+  aws:
+    credentials:
+      access-key: DO00KMVVA2PCDAP6B6AV
+      secret-key: 6YFkfXRk1+c+V1RU9gClD61O9ccEn+emEGwZHatNa2g
+    s3:
+      bucket: ssn.soluciones
+      endpoint: https://nyc3.digitaloceanspaces.com
+      region: nyc3
+      prefix: XmlClientes
+      url: https://nyc3.digitaloceanspaces.com/ssn.soluciones
