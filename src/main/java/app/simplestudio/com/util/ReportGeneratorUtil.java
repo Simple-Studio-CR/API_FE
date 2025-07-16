@@ -175,9 +175,9 @@ public class ReportGeneratorUtil {
      */
     private String buildLogoPath(String logoEmpresa) {
         if (logoEmpresa != null && !logoEmpresa.trim().isEmpty()) {
-            return pathUploadFilesApi + "logo/" + logoEmpresa;
+            return logoEmpresa;
         } else {
-            return pathUploadFilesApi + "logo/default.png";
+            return "default.png";
         }
     }
     

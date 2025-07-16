@@ -4,6 +4,7 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
+import app.simplestudio.com.service.ReportService;
 import app.simplestudio.com.service.storage.S3FileService;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.ReportGeneratorUtil;
@@ -62,6 +63,9 @@ public class ReenviarDocsController {
   @Autowired
   private ResendDocumentUtil resendDocumentUtil;
 
+  @Autowired
+  private ReportService reportService;
+
   // ==================== CONFIGURACIÓN ORIGINAL ====================
 
   @Value("${url.qr}")
@@ -77,7 +81,7 @@ public class ReenviarDocsController {
    */
   @RequestMapping(value = {"/reenviar-xmls"}, method = {RequestMethod.POST},
       consumes = {"application/json"}, produces = {"application/json"})
-  public String sendXmlAndPdf(@RequestBody String jsonRequest) throws IOException, SQLException {
+  public String sendXmlAndPdf(@RequestBody String jsonRequest) {
 
     return processDocumentResend(jsonRequest);
   }
@@ -146,7 +150,7 @@ public class ReenviarDocsController {
       }
 
       // Generar PDF
-      byte[] pdfBytes = generateInvoicePdf(clave, ce, emisor);
+      byte[] pdfBytes = reportService.generateFacturaPdf(clave);
 
       // Enviar email con attachments
       sendDocumentEmail(ce, emisor, email, clave, xmlPaths, pdfBytes);
@@ -239,17 +243,37 @@ public class ReenviarDocsController {
     // Adjuntar respuesta de Hacienda
     String respuestaMhPath = xmlPaths.get("respuestaMh");
     if (s3FileService.fileExists(respuestaMhPath)) {
-      FileSystemResource respuestaMhFile = new FileSystemResource(new File(respuestaMhPath));
-      helper.addAttachment(clave + "-respuesta-mh.xml", respuestaMhFile, "application/xml");
-      log.debug("Adjuntado archivo respuesta MH: {}", respuestaMhPath);
+      try (InputStream respuestaMhStream = s3FileService.downloadFile(respuestaMhPath)) {
+        if (respuestaMhStream != null) {
+          byte[] respuestaMhBytes = respuestaMhStream.readAllBytes();
+          helper.addAttachment(clave + "-respuesta-mh.xml",
+              () -> new java.io.ByteArrayInputStream(respuestaMhBytes),
+              "application/xml");
+          log.debug("Adjuntado archivo respuesta MH desde S3: {}", respuestaMhPath);
+        }
+      } catch (Exception e) {
+        log.error("Error descargando archivo respuesta MH desde S3: {}", e.getMessage());
+      }
+    } else {
+      log.warn("Archivo respuesta MH no encontrado en S3: {}", respuestaMhPath);
     }
 
     // Adjuntar factura firmada
     String facturaSignPath = xmlPaths.get("facturaSign");
     if (s3FileService.fileExists(facturaSignPath)) {
-      FileSystemResource facturaSignFile = new FileSystemResource(new File(facturaSignPath));
-      helper.addAttachment(clave + "-factura-sign.xml", facturaSignFile, "application/xml");
-      log.debug("Adjuntado archivo factura firmada: {}", facturaSignPath);
+      try (InputStream facturaSignStream = s3FileService.downloadFile(facturaSignPath)) {
+        if (facturaSignStream != null) {
+          byte[] facturaSignBytes = facturaSignStream.readAllBytes();
+          helper.addAttachment(clave + "-factura-sign.xml",
+              () -> new java.io.ByteArrayInputStream(facturaSignBytes),
+              "application/xml");
+          log.debug("Adjuntado archivo factura firmada desde S3: {}", facturaSignPath);
+        }
+      } catch (Exception e) {
+        log.error("Error descargando archivo factura firmada desde S3: {}", e.getMessage());
+      }
+    } else {
+      log.warn("Archivo factura firmada no encontrado en S3: {}", facturaSignPath);
     }
   }
 
