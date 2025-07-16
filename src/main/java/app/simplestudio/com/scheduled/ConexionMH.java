@@ -21,7 +21,6 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -64,10 +63,6 @@ public class ConexionMH {
   @Autowired
   private JsonProcessorUtil jsonProcessorUtil;
 
-  // ==================== CONFIGURACIÓN ORIGINAL ====================
-  @Value("${path.upload.files.api}")
-  private String pathUploadFilesApi;
-
   // Variables de instancia para ambiente actual
   private String _endpoint;
   private String _username;
@@ -87,7 +82,7 @@ public class ConexionMH {
       processDocumentsSending();
       log.info("Finalizo el proceso de envío");
     } catch (Exception e) {
-      log.info("Mensaje de error generado por el envío a MH: " + e.getMessage());
+      log.error("Mensaje de error generado por el envío a MH: {}", e.getMessage(), e);
     }
   }
 
@@ -96,8 +91,13 @@ public class ConexionMH {
    */
 //  @Scheduled(fixedDelay = 120000L)
   public void ConsultaComprobantesMH() {
-    log.info("Preparando el entorno para consultar los documentos a MH");
-    processDocumentsStatusCheck();
+    try {
+      log.info("Preparando el entorno para consultar los documentos a MH");
+      processDocumentsStatusCheck();
+      log.info("Finalizo el proceso de consulta de estados");
+    } catch (Exception e) {
+      log.error("Error general en consulta de estados: {}", e.getMessage(), e);
+    }
   }
 
   /**
@@ -107,8 +107,19 @@ public class ConexionMH {
       String emailTo, String emailEmpresa, String logo, String notaFactura,
       String detalleFactura1, String detalleFactura2) throws Exception {
 
+    // Validar parámetros de entrada
+    if (emailTo == null || emailTo.trim().isEmpty()) {
+      log.warn("Email de destino es nulo o vacío para clave: {}", clave);
+      return;
+    }
+
     if (!emailManagerUtil.isValidEmail(emailTo)) {
       log.warn("Email inválido para envío: {}", emailTo);
+      return;
+    }
+
+    if (clave == null || clave.length() != 50) {
+      log.warn("Clave inválida para envío de email: {}", clave);
       return;
     }
 
@@ -129,13 +140,6 @@ public class ConexionMH {
     }
   }
 
-  /**
-   * FIRMA ORIGINAL MANTENIDA - Mapeo de tipos de documento
-   */
-  public String tipoDocumento(String td) {
-    return documentTypeUtil.tipoDocumento(td);
-  }
-
   // ==================== MÉTODOS AUXILIARES REFACTORIZADOS ====================
 
   /**
@@ -144,6 +148,8 @@ public class ConexionMH {
   private void processDocumentsSending() throws Exception {
     ObjectMapper objectMapper = new ObjectMapper();
     List<ComprobantesElectronicos> listComprobantes = _comprobantesElectronicosService.findAllForSend();
+
+    log.info("Procesando {} documentos para envío a MH", listComprobantes.size());
 
     for (ComprobantesElectronicos ce : listComprobantes) {
       try {
@@ -169,9 +175,10 @@ public class ConexionMH {
     // Verificar que existe el archivo XML
     String xmlPath = buildXmlPath(ce);
     if (!s3FileService.fileExists(xmlPath)) {
-      log.info("El XML del documento {} no existe en: {}", ce.getClave(), xmlPath);
+      log.warn("El XML del documento {} no existe en S3: {}", ce.getClave(), xmlPath);
       return;
     }
+    log.info("XML encontrado en S3 para documento: {}", ce.getClave());
 
     // Enviar documento
     String response = _sender.send(
@@ -195,6 +202,8 @@ public class ConexionMH {
   private void processDocumentsStatusCheck() {
     ObjectMapper objectMapper = new ObjectMapper();
     List<ComprobantesElectronicos> listComprobantes = _comprobantesElectronicosService.findAllForCheckStatus();
+
+    log.info("Procesando {} documentos para consulta de estado", listComprobantes.size());
 
     for (ComprobantesElectronicos ce : listComprobantes) {
       try {
@@ -220,7 +229,7 @@ public class ConexionMH {
     String claveToQuery = buildQueryKey(ce);
 
     // Consultar estado
-    String pathXml = pathUploadFilesApi + ce.getIdentificacion() + "/";
+    String pathXml = ce.getIdentificacion() + "/";
     String response = _sender.consultarEstadoDocumento(
         _endpoint, claveToQuery, _username, _password, _urlToken, pathXml, _clientId, ce.getIdentificacion()
     );
@@ -250,7 +259,7 @@ public class ConexionMH {
     }
 
     // Actualizar en base de datos
-    String nameXmlAcceptacion = documentTypeUtil.buildResponseFileName(ce.getClave());
+    String nameXmlAcceptacion = ce.getClave() + "-respuesta-mh.xml";
     _comprobantesElectronicosService.updateComprobantesElectronicosByClaveAndEmisor(
         nameXmlAcceptacion,
         responseNode.path("fecha").asText(),
@@ -278,19 +287,19 @@ public class ConexionMH {
    * Construye la ruta del archivo XML
    */
   private String buildXmlPath(ComprobantesElectronicos ce) {
-    return pathUploadFilesApi + ce.getIdentificacion() + "/" + ce.getNameXmlSign() + ".xml";
+    return ce.getIdentificacion() + "/" + ce.getNameXmlSign() + ".xml";
   }
-
   /**
    * Construye la clave para consulta según tipo de documento
    */
   private String buildQueryKey(ComprobantesElectronicos ce) {
     String clave = ce.getClave();
-    String tipoDocumento = documentTypeUtil.getTipoDocumentoFromClave(clave);
+    String tipoDocumento = clave.substring(29, 31);  // Mantener lógica original
 
+    // Usar DocumentTypeUtil para verificar si es mensaje receptor
     if (documentTypeUtil.isMensajeReceptor(tipoDocumento)) {
       MensajeReceptor mr = _mensajeReceptorService.findByClave(clave);
-      return mr.getClaveDocumentoEmisor() + "-" + documentTypeUtil.getConsecutivoFromClave(mr.getClave());
+      return mr.getClaveDocumentoEmisor() + "-" + mr.getClave().substring(21, 41);
     }
 
     return clave;
@@ -301,6 +310,8 @@ public class ConexionMH {
    */
   private boolean shouldSendAcceptanceEmail(String estadoHacienda, ComprobantesElectronicos ce) {
     return "aceptado".equalsIgnoreCase(estadoHacienda) &&
+        ce.getEmailDistribucion() != null &&
+        !ce.getEmailDistribucion().trim().isEmpty() &&
         emailManagerUtil.isValidEmail(ce.getEmailDistribucion());
   }
 
@@ -311,6 +322,9 @@ public class ConexionMH {
     try {
       String tipoDocumentoDesc = documentTypeUtil.tipoDocumento(ce.getTipoDocumento());
 
+      // Usar S3FileService para obtener la URL del logo
+      String logoUrl = s3FileService.getLogoUrl(ce.getEmisor());
+
       enviaFacturas(
           tipoDocumentoDesc,
           ce.getClave(),
@@ -318,7 +332,7 @@ public class ConexionMH {
           ce.getEmisor().getNombreComercial(),
           ce.getEmailDistribucion(),
           ce.getEmisor().getEmail(),
-          ce.getEmisor().getLogoEmpresa(),
+          logoUrl,
           ce.getEmisor().getNataFactura(),
           ce.getEmisor().getDetalleEnFactura1(),
           ce.getEmisor().getDetalleEnFactura2()

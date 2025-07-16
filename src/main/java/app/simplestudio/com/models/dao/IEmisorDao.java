@@ -12,6 +12,6 @@ public interface IEmisorDao extends CrudRepository<Emisor, Long> {
   @Query("SELECT e FROM Emisor e WHERE e.identificacion = ?1")
   Emisor findEmisorOnlyIdentificacion(String paramString);
   
-  @Query("SELECT MAX(c) FROM CTerminal c INNER JOIN c.sucursal s WHERE s.emisor.id = ?1 AND s.sucursal = ?2 AND c.terminal = ?3 ")
+  @Query("SELECT c FROM CTerminal c INNER JOIN c.sucursal s WHERE s.emisor.id = ?1 AND s.sucursal = ?2 AND c.terminal = ?3 ")
   CTerminal findBySecuenciaByTerminal(Long paramLong, int paramInt1, int paramInt2);
 }
