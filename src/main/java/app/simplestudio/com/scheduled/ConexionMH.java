@@ -81,7 +81,7 @@ public class ConexionMH {
   /**
    * FIRMA ORIGINAL MANTENIDA - Scheduled para envío de documentos
    */
-  @Scheduled(fixedDelay = 60000L)
+//  @Scheduled(fixedDelay = 60000L)
   public void EnviarComprobantesMH() {
     try {
       log.info("Preparando el entorno para enviar los documentos a MH");
@@ -95,7 +95,7 @@ public class ConexionMH {
   /**
    * FIRMA ORIGINAL MANTENIDA - Scheduled para consulta de estados
    */
-  @Scheduled(fixedDelay = 120000L)
+//  @Scheduled(fixedDelay = 120000L)
   public void ConsultaComprobantesMH() {
     log.info("Preparando el entorno para consultar los documentos a MH");
     processDocumentsStatusCheck();

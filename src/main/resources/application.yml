@@ -40,7 +40,7 @@ correo:
 path:
   upload:
     files:
-      api: /home/XmlClientes/
+      api: /XmlClientes/
 
 endpoint:
   prod: https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/
