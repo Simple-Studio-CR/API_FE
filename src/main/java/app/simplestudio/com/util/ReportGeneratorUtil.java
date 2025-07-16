@@ -18,9 +18,6 @@ public class ReportGeneratorUtil {
     
     private static final Logger log = LoggerFactory.getLogger(ReportGeneratorUtil.class);
     
-    @Value("${path.upload.files.api}")
-    private String pathUploadFilesApi;
-    
     @Value("${url.qr}")
     private String urlQr;
     
