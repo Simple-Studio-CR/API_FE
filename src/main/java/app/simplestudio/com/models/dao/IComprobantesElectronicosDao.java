@@ -7,10 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface IComprobantesElectronicosDao extends CrudRepository<ComprobantesElectronicos, Long> {
-  @Query("SELECT MAX(c) FROM ComprobantesElectronicos c WHERE c.identificacion=?1 AND c.tipoDocumento = ?2 AND c.sucursal = ?3 AND c.terminal=?4 AND c.ambiente = ?5")
+  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.identificacion=?1 AND c.tipoDocumento = ?2 AND c.sucursal = ?3 AND c.terminal=?4 AND c.ambiente = ?5")
   ComprobantesElectronicos findByEmisor(String paramString1, String paramString2, int paramInt1, int paramInt2, String paramString3);
   
-  @Query("SELECT MAX(c) FROM ComprobantesElectronicos c WHERE c.clave=?1")
+  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.clave=?1")
   ComprobantesElectronicos findByClave(String paramString);
   
   @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.clave=?1")
