@@ -398,7 +398,7 @@ public class S3FileService {
     /**
      * Construye URL pública del archivo
      */
-    private String buildUrl(String key) {
+    public String buildUrl(String key) {
         return s3PublicUrl + "/" + key;
     }
 
