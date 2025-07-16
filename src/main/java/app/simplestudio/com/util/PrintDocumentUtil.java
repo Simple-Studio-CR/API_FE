@@ -2,6 +2,7 @@ package app.simplestudio.com.util;
 
 import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public class PrintDocumentUtil {
     private DocumentTypeUtil documentTypeUtil;
 
     @Autowired
-    private FileManagerUtil fileManagerUtil;
+    private StorageAdapter storageAdapter;
 
     @Value("${path.upload.files.api}")
     private String pathUploadFilesApi;
@@ -149,9 +150,8 @@ public class PrintDocumentUtil {
         
         if (logoEmpresa != null && !logoEmpresa.trim().isEmpty()) {
             logoPath = pathUploadFilesApi + "logo/" + logoEmpresa.trim();
-            
-            // Verificar que el archivo existe
-            if (fileManagerUtil.fileExists(logoPath)) {
+
+            if (storageAdapter.fileExists(logoPath)) {
                 log.debug("Logo empresarial encontrado: {}", logoPath);
                 return logoPath;
             } else {
@@ -329,12 +329,6 @@ public class PrintDocumentUtil {
         // Verificar template de reporte
         if (getClass().getResourceAsStream("/facturas.jasper") == null) {
             issues.append("Template /facturas.jasper no encontrado; ");
-        }
-
-        // Verificar directorio de logos
-        String logoDir = pathUploadFilesApi + "logo/";
-        if (!fileManagerUtil.directoryExists(logoDir)) {
-            issues.append("Directorio de logos no existe: ").append(logoDir).append("; ");
         }
 
         if (!issues.isEmpty()) {

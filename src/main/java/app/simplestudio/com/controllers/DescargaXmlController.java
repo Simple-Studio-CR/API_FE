@@ -1,8 +1,7 @@
 package app.simplestudio.com.controllers;
 
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.DownloadXmlUtil;
-import app.simplestudio.com.util.FileManagerUtil;
-import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +29,6 @@ public class DescargaXmlController {
   // ==================== NUEVOS UTILS ====================
   @Autowired
   private DownloadXmlUtil downloadXmlUtil;
-
-  @Autowired
-  private FileManagerUtil fileManagerUtil;
 
   // ==================== ENDPOINT ORIGINAL MANTENIDO ====================
 

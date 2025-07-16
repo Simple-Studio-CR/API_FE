@@ -11,7 +11,6 @@ import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.EmailManagerUtil;
 import app.simplestudio.com.util.EnvironmentConfigUtil;
-import app.simplestudio.com.util.FileManagerUtil;
 import app.simplestudio.com.util.JsonProcessorUtil;
 import app.simplestudio.com.util.ReportGeneratorUtil;
 import com.fasterxml.jackson.databind.JsonNode;

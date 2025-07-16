@@ -1,5 +1,6 @@
 package app.simplestudio.com.util;
 
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import java.io.File;
 import java.io.StringWriter;
 import javax.xml.parsers.DocumentBuilder;
@@ -31,7 +32,7 @@ public class DigitalSignatureUtil {
     private XadesSignatureUtil xadesSignatureUtil;
     
     @Autowired
-    private FileManagerUtil fileManagerUtil;
+    private StorageAdapter fileManagerUtil;
     
     /**
      * Resultado de la operación de firma

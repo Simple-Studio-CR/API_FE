@@ -13,7 +13,6 @@ import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.EntityMapperUtil;
 import app.simplestudio.com.util.EnvironmentConfigUtil;
-import app.simplestudio.com.util.FileManagerUtil;
 import app.simplestudio.com.util.InvoiceProcessingUtil;
 import app.simplestudio.com.util.XmlValidationUtil;
 import com.fasterxml.jackson.databind.JsonNode;
