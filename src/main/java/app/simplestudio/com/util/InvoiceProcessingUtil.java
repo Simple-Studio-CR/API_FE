@@ -31,9 +31,6 @@ public class InvoiceProcessingUtil {
     private DocumentTypeUtil documentTypeUtil;
 
     @Autowired
-    private InvoiceProcessingUtil invoiceProcessingUtil;
-
-    @Autowired
     private XmlValidationUtil xmlValidationUtil;
     
     /**
@@ -201,7 +198,7 @@ public class InvoiceProcessingUtil {
             documentTypeUtil.getCodigoSituacion(requestData.path("situacion").asText()),
             "506",
             consecutivo.toString(),
-            invoiceProcessingUtil.generateRandomSecurityCode(),  // <- ALEATORIO (CORRECTO)
+            generateRandomSecurityCode(),  // <- ALEATORIO (CORRECTO)
             xmlValidationUtil.str_pad(requestData.path("sucursal").asText(), 3, "0", "STR_PAD_LEFT"),
             xmlValidationUtil.str_pad(requestData.path("terminal").asText(), 5, "0", "STR_PAD_LEFT")
         );
