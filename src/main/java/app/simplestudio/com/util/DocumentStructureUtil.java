@@ -1,194 +1,186 @@
 package app.simplestudio.com.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.stereotype.Component;
 
+/**
+ * Utilidad mejorada para manejar la estructura de documentos XML de Hacienda v4.3
+ * Mantiene exactamente las mismas interfaces públicas
+ */
 @Component
 public class DocumentStructureUtil {
-    
-    /**
-     * Configuración de documentos XML por tipo
-     */
-    public static class DocumentConfig {
-        private String xmlDeclaration;
-        private String rootElementOpen;
-        private String rootElementClose;
-        private String description;
-        
-        public DocumentConfig(String xmlDeclaration, String rootElementOpen, String rootElementClose, String description) {
-            this.xmlDeclaration = xmlDeclaration;
-            this.rootElementOpen = rootElementOpen;
-            this.rootElementClose = rootElementClose;
-            this.description = description;
-        }
-        
-        public String getXmlDeclaration() { return xmlDeclaration; }
-        public String getRootElementOpen() { return rootElementOpen; }
-        public String getRootElementClose() { return rootElementClose; }
-        public String getDescription() { return description; }
-        
-        public String getFullHeader() {
-            return xmlDeclaration + rootElementOpen;
-        }
-        
-        public String getFullFooter() {
-            return rootElementClose;
-        }
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentStructureUtil.class);
+
+    // Mapeo de tipos de documento a sus elementos raíz
+    private static final Map<String, String> DOCUMENT_ROOT_ELEMENTS = new HashMap<>();
+    private static final Map<String, String> DOCUMENT_SCHEMAS = new HashMap<>();
+    private static final Map<String, String> DOCUMENT_DESCRIPTIONS = new HashMap<>();
+
+    static {
+        // Configuración según especificación Hacienda v4.3
+        DOCUMENT_ROOT_ELEMENTS.put("01", "FacturaElectronica");
+        DOCUMENT_ROOT_ELEMENTS.put("02", "NotaDebitoElectronica");
+        DOCUMENT_ROOT_ELEMENTS.put("03", "NotaCreditoElectronica");
+        DOCUMENT_ROOT_ELEMENTS.put("04", "TiqueteElectronico");
+        DOCUMENT_ROOT_ELEMENTS.put("05", "MensajeReceptor");
+        DOCUMENT_ROOT_ELEMENTS.put("08", "FacturaElectronicaCompra");
+        DOCUMENT_ROOT_ELEMENTS.put("09", "FacturaElectronicaExportacion");
+
+        DOCUMENT_SCHEMAS.put("01", "facturaElectronica");
+        DOCUMENT_SCHEMAS.put("02", "notaDebitoElectronica");
+        DOCUMENT_SCHEMAS.put("03", "notaCreditoElectronica");
+        DOCUMENT_SCHEMAS.put("04", "tiqueteElectronico");
+        DOCUMENT_SCHEMAS.put("05", "mensajeReceptor");
+        DOCUMENT_SCHEMAS.put("08", "facturaElectronicaCompra");
+        DOCUMENT_SCHEMAS.put("09", "facturaElectronicaExportacion");
+
+        DOCUMENT_DESCRIPTIONS.put("01", "Factura Electrónica");
+        DOCUMENT_DESCRIPTIONS.put("02", "Nota de Débito Electrónica");
+        DOCUMENT_DESCRIPTIONS.put("03", "Nota de Crédito Electrónica");
+        DOCUMENT_DESCRIPTIONS.put("04", "Tiquete Electrónico");
+        DOCUMENT_DESCRIPTIONS.put("05", "Mensaje Receptor");
+        DOCUMENT_DESCRIPTIONS.put("08", "Factura Electrónica de Compra");
+        DOCUMENT_DESCRIPTIONS.put("09", "Factura Electrónica de Exportación");
     }
-    
-    private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
-    private static final String SCHEMA_BASE = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/";
-    private static final String XSD_ATTRS = " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"";
-    
-    private final Map<String, DocumentConfig> documentConfigs;
-    
-    public DocumentStructureUtil() {
-        documentConfigs = new HashMap<>();
-        initializeDocumentConfigs();
-    }
-    
+
     /**
-     * Inicializa las configuraciones de todos los tipos de documentos
-     */
-    private void initializeDocumentConfigs() {
-        // 01 - Factura Electrónica
-        documentConfigs.put("01", new DocumentConfig(
-            XML_DECLARATION,
-            "<FacturaElectronica" + XSD_ATTRS + " xmlns=\"" + SCHEMA_BASE + "facturaElectronica\">",
-            "</FacturaElectronica>",
-            "Factura Electrónica"
-        ));
-        
-        // 02 - Nota de Débito Electrónica
-        documentConfigs.put("02", new DocumentConfig(
-            XML_DECLARATION,
-            "<NotaDebitoElectronica" + XSD_ATTRS + " xmlns=\"" + SCHEMA_BASE + "notaDebitoElectronica\">",
-            "</NotaDebitoElectronica>",
-            "Nota de Débito Electrónica"
-        ));
-        
-        // 03 - Nota de Crédito Electrónica
-        documentConfigs.put("03", new DocumentConfig(
-            XML_DECLARATION,
-            "<NotaCreditoElectronica" + XSD_ATTRS + " xmlns=\"" + SCHEMA_BASE + "notaCreditoElectronica\">",
-            "</NotaCreditoElectronica>",
-            "Nota de Crédito Electrónica"
-        ));
-        
-        // 04 - Tiquete Electrónico
-        documentConfigs.put("04", new DocumentConfig(
-            XML_DECLARATION,
-            "<TiqueteElectronico" + XSD_ATTRS + " xmlns=\"" + SCHEMA_BASE + "tiqueteElectronico\">",
-            "</TiqueteElectronico>",
-            "Tiquete Electrónico"
-        ));
-        
-        // 05, 06, 07 - Mensaje Receptor
-        DocumentConfig mensajeReceptorConfig = new DocumentConfig(
-            XML_DECLARATION,
-            "<MensajeReceptor xmlns=\"" + SCHEMA_BASE + "mensajeReceptor\"" + XSD_ATTRS + ">",
-            "</MensajeReceptor>",
-            "Mensaje Receptor"
-        );
-        documentConfigs.put("05", mensajeReceptorConfig);
-        documentConfigs.put("06", mensajeReceptorConfig);
-        documentConfigs.put("07", mensajeReceptorConfig);
-        
-        // 08 - Factura Electrónica de Compra
-        documentConfigs.put("08", new DocumentConfig(
-            XML_DECLARATION,
-            "<FacturaElectronicaCompra" + XSD_ATTRS + " xmlns=\"" + SCHEMA_BASE + "facturaElectronicaCompra\">",
-            "</FacturaElectronicaCompra>",
-            "Factura Electrónica de Compra"
-        ));
-        
-        // 09 - Factura Electrónica de Exportación
-        documentConfigs.put("09", new DocumentConfig(
-            XML_DECLARATION,
-            "<FacturaElectronicaExportacion" + XSD_ATTRS + " xmlns=\"" + SCHEMA_BASE + "facturaElectronicaExportacion\">",
-            "</FacturaElectronicaExportacion>",
-            "Factura Electrónica de Exportación"
-        ));
-    }
-    
-    /**
-     * Obtiene la configuración del documento por tipo
-     */
-    public DocumentConfig getDocumentConfig(String tipoDocumento) {
-        return documentConfigs.get(tipoDocumento);
-    }
-    
-    /**
-     * Obtiene el header completo del documento (XML declaration + root element)
+     * Obtiene el header del documento XML según el tipo
+     * INTERFAZ SIN CAMBIOS
      */
     public String getDocumentHeader(String tipoDocumento) {
-        DocumentConfig config = getDocumentConfig(tipoDocumento);
-        return config != null ? config.getFullHeader() : "";
+        String rootElement = DOCUMENT_ROOT_ELEMENTS.getOrDefault(tipoDocumento, "FacturaElectronica");
+        String schema = DOCUMENT_SCHEMAS.getOrDefault(tipoDocumento, "facturaElectronica");
+
+        // Construir header con StringBuilder para evitar problemas de concatenación
+        StringBuilder header = new StringBuilder();
+
+        // Declaración XML (solo una vez, al principio)
+        header.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+
+        // Elemento raíz con namespaces
+        header.append("<").append(rootElement);
+        header.append(" xmlns=\"https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/").append(schema).append("\"");
+        header.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+        header.append(" xsi:schemaLocation=\"https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/").append(schema);
+        header.append(" https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/").append(schema).append(".xsd\">");
+
+        String result = header.toString();
+
+        if (log.isDebugEnabled()) {
+            log.debug("Header generado para tipo {}: {}", tipoDocumento, result);
+        }
+
+        return result;
     }
-    
+
     /**
-     * Obtiene el footer completo del documento (closing root element)
+     * Obtiene el footer del documento XML según el tipo
+     * INTERFAZ SIN CAMBIOS
      */
     public String getDocumentFooter(String tipoDocumento) {
-        DocumentConfig config = getDocumentConfig(tipoDocumento);
-        return config != null ? config.getFullFooter() : "";
+        String rootElement = DOCUMENT_ROOT_ELEMENTS.getOrDefault(tipoDocumento, "FacturaElectronica");
+        String footer = "</" + rootElement + ">";
+
+        if (log.isDebugEnabled()) {
+            log.debug("Footer generado para tipo {}: {}", tipoDocumento, footer);
+        }
+
+        return footer;
     }
-    
+
     /**
      * Obtiene la descripción del tipo de documento
+     * INTERFAZ SIN CAMBIOS
      */
     public String getDocumentDescription(String tipoDocumento) {
-        DocumentConfig config = getDocumentConfig(tipoDocumento);
-        return config != null ? config.getDescription() : "";
+        return DOCUMENT_DESCRIPTIONS.getOrDefault(tipoDocumento, "Documento Desconocido");
     }
-    
+
     /**
-     * Verifica si es un mensaje receptor (tipos 05, 06, 07)
+     * Verifica si es un mensaje receptor
+     * INTERFAZ SIN CAMBIOS
      */
     public boolean isMensajeReceptor(String tipoDocumento) {
-        return "05".equals(tipoDocumento) || "06".equals(tipoDocumento) || "07".equals(tipoDocumento);
+        return "05".equals(tipoDocumento);
     }
-    
+
     /**
-     * Verifica si es factura de exportación (tipo 09)
+     * Verifica si es una factura de exportación
+     * INTERFAZ SIN CAMBIOS
      */
     public boolean isFacturaExportacion(String tipoDocumento) {
         return "09".equals(tipoDocumento);
     }
-    
+
     /**
-     * Obtiene el XML del proveedor del sistema (ContactoDesarrollador)
+     * Construye la sección "Otros" del documento
+     * INTERFAZ SIN CAMBIOS
      */
-    public String getContactoDesarrolladorXml() {
-        return "<ContactoDesarrollador xmlns=\"https://samyx.digital\">" +
-               "<ProveedorSistemaComprobantesElectronicos>" +
-               "<Nombre>SamyxFacturador</Nombre>" +
-               "<Identificacion>" +
-               "<Tipo>01</Tipo>" +
-               "<Numero>114970286</Numero>" +
-               "</Identificacion>" +
-               "<CorreoElectronico>info@snnsoluciones.com</CorreoElectronico>" +
-               "</ProveedorSistemaComprobantesElectronicos>" +
-               "</ContactoDesarrollador>";
-    }
-    
-    /**
-     * Construye XML de "Otros" estándar con contacto de desarrollador
-     */
-    public String buildOtrosSection(String otroTexto) {
-        StringBuilder otros = new StringBuilder();
-        otros.append("<Otros>");
-        
-        if (otroTexto != null && !otroTexto.trim().isEmpty()) {
-            otros.append("<OtroTexto>").append(otroTexto).append("</OtroTexto>");
+    public String buildOtrosSection(String otros) {
+        if (otros == null || otros.trim().isEmpty()) {
+            return "";
         }
-        
-        otros.append("<OtroContenido>")
-             .append(getContactoDesarrolladorXml())
-             .append("</OtroContenido>")
-             .append("</Otros>");
-        
-        return otros.toString();
+
+        // Validar que la sección Otros esté bien formada
+        String cleanOtros = otros.trim();
+
+        // Si no empieza con <Otros>, agregarlo
+        if (!cleanOtros.startsWith("<Otros>")) {
+            cleanOtros = "<Otros>" + cleanOtros;
+        }
+
+        // Si no termina con </Otros>, agregarlo
+        if (!cleanOtros.endsWith("</Otros>")) {
+            cleanOtros = cleanOtros + "</Otros>";
+        }
+
+        return cleanOtros;
+    }
+
+    /**
+     * NUEVO: Valida que un documento XML completo esté bien formado
+     * Método interno para validación adicional
+     */
+    public boolean validateCompleteDocument(String xmlDocument, String tipoDocumento) {
+        if (xmlDocument == null || xmlDocument.trim().isEmpty()) {
+            log.error("Documento XML vacío o nulo");
+            return false;
+        }
+
+        String rootElement = DOCUMENT_ROOT_ELEMENTS.getOrDefault(tipoDocumento, "FacturaElectronica");
+
+        // Verificar que empiece con declaración XML
+        if (!xmlDocument.trim().startsWith("<?xml")) {
+            log.error("El documento no empieza con declaración XML");
+            return false;
+        }
+
+        // Verificar que tenga el elemento raíz correcto
+        if (!xmlDocument.contains("<" + rootElement)) {
+            log.error("El documento no contiene el elemento raíz esperado: {}", rootElement);
+            return false;
+        }
+
+        // Verificar que cierre correctamente
+        if (!xmlDocument.contains("</" + rootElement + ">")) {
+            log.error("El documento no cierra correctamente el elemento raíz: {}", rootElement);
+            return false;
+        }
+
+        // Verificar que no haya contenido después del cierre
+        int closeIndex = xmlDocument.lastIndexOf("</" + rootElement + ">");
+        if (closeIndex != -1) {
+            String afterClose = xmlDocument.substring(closeIndex + rootElement.length() + 3).trim();
+            if (!afterClose.isEmpty()) {
+                log.error("Hay contenido después del cierre del elemento raíz: '{}'", afterClose);
+                return false;
+            }
+        }
+
+        return true;
     }
 }

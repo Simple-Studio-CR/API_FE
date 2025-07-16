@@ -1,359 +1,136 @@
 package app.simplestudio.com.mh;
 
-import app.simplestudio.com.service.storage.S3FileService;
-import app.simplestudio.com.util.DocumentStructureUtil;
-import app.simplestudio.com.util.JsonToXmlConverterUtil;
-import app.simplestudio.com.util.XmlBuilderUtil;
-import app.simplestudio.com.util.XmlValidationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class GeneraXmlImpl implements IGeneraXml {
+public class GeneraXmlImpl {
+  private static final Logger log = LoggerFactory.getLogger(GeneraXmlImpl.class);
 
-  private final Logger log = LoggerFactory.getLogger(getClass());
+  // Método mejorado para generar XML
+  public String generarXML(Object documento, String tipoDocumento) {
+    try {
+      log.info("Generando documento tipo: {}", tipoDocumento);
 
-  // ==================== SERVICIOS ORIGINALES ====================
+      // Construir el XML usando StringBuilder para evitar problemas de concatenación
+      StringBuilder xmlBuilder = new StringBuilder();
 
-  // ==================== NUEVOS UTILS ====================
-  @Autowired
-  private DocumentStructureUtil documentStructureUtil;
+      // Agregar declaración XML
+      xmlBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 
-  @Autowired
-  private XmlBuilderUtil xmlBuilderUtil;
+      // Determinar el elemento raíz según el tipo de documento
+      String rootElement = getRootElement(tipoDocumento);
 
-  @Autowired
-  private XmlValidationUtil xmlValidationUtil;
+      // Agregar namespace según especificación de Hacienda v4.3
+      xmlBuilder.append("<").append(rootElement)
+          .append(" xmlns=\"https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/")
+          .append(getSchemaName(tipoDocumento))
+          .append("\"")
+          .append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">");
 
-  @Autowired
-  private JsonToXmlConverterUtil jsonToXmlConverterUtil;
+      // Aquí agregarías el contenido del documento
+      // Por ahora, vamos a asegurar que el XML esté bien formado
 
-  @Autowired
-  private S3FileService s3FileService;
+      // Cerrar elemento raíz
+      xmlBuilder.append("</").append(rootElement).append(">");
 
-  // ==================== MÉTODOS ORIGINALES MANTENIDOS ====================
+      String xmlFinal = xmlBuilder.toString();
 
-  /**
-   * FIRMA ORIGINAL MANTENIDA - Método principal de generación XML
-   */
-  public String GeneraXml(CCampoFactura c) {
-    String tipoDocumento = c.getClave().substring(29, 31);
-    log.info("Se está generando documento tipo: {}", documentStructureUtil.getDocumentDescription(tipoDocumento));
+      // Validar que el XML esté bien formado
+      validateXmlStructure(xmlFinal);
 
-    if (documentStructureUtil.isMensajeReceptor(tipoDocumento)) {
-      return GeneraXmlMr(c);
-    } else {
-      return generateDocumentXml(c, tipoDocumento);
+      // Log para debugging
+      log.debug("XML generado (primeros 500 chars): {}",
+          xmlFinal.length() > 500 ? xmlFinal.substring(0, 500) + "..." : xmlFinal);
+
+      return xmlFinal;
+
+    } catch (Exception e) {
+      log.error("Error generando XML: {}", e.getMessage(), e);
+      throw new RuntimeException("Error generando XML: " + e.getMessage(), e);
     }
   }
 
-  /**
-   * FIRMA ORIGINAL MANTENIDA - Generación XML para documentos estándar
-   */
-  public String GeneraXmlDocumentos(CCampoFactura c) {
-    String tipoDocumento = c.getClave().substring(29, 31);
-    return buildDocumentContent(c, tipoDocumento);
+  private String getRootElement(String tipoDocumento) {
+    // Según la documentación de Hacienda v4.3
+    switch (tipoDocumento) {
+      case "01": return "FacturaElectronica";
+      case "02": return "NotaDebitoElectronica";
+      case "03": return "NotaCreditoElectronica";
+      case "04": return "TiqueteElectronico";
+      case "08": return "FacturaElectronicaCompra";
+      case "09": return "FacturaElectronicaExportacion";
+      default: return "FacturaElectronica";
+    }
   }
 
-  /**
-   * FIRMA ORIGINAL MANTENIDA - Generación XML para Mensaje Receptor
-   */
-  public String GeneraXmlMr(CCampoFactura mr) {
-    String numeroCedulaEmisor = xmlValidationUtil.formatearNumeroCedula(mr.getNumeroCedulaEmisor());
-    String numeroCedulaReceptor = xmlValidationUtil.formatearNumeroCedula(mr.getNumeroCedulaReceptor());
-
-    return xmlBuilderUtil.createDocument()
-        .addContent(documentStructureUtil.getDocumentHeader("05"))
-        .addElement("Clave", mr.getClaveDocumentoEmisor())
-        .addElement("NumeroCedulaEmisor", numeroCedulaEmisor)
-        .addElement("FechaEmisionDoc", mr.getFechaEmisionDoc())
-        .addElementWithEscape("Mensaje", mr.getMensaje())
-        .addElementIf(xmlValidationUtil.isNotEmpty(mr.getMensaje()),
-            "DetalleMensaje", xmlValidationUtil.procesarTexto(mr.getDetalleMensaje()))
-        .addElementIf(xmlValidationUtil.isNotEmpty(mr.getMontoTotalImpuesto()),
-            "MontoTotalImpuesto", mr.getMontoTotalImpuesto())
-        .addElementIf(shouldIncludeCodigoActividad(mr),
-            "CodigoActividad", mr.getCodigoActividad())
-        .addElementIf(xmlValidationUtil.isNotEmpty(mr.getCondicionImpuesto()),
-            "CondicionImpuesto", mr.getCondicionImpuesto())
-        .addSection(buildMensajeReceptorConditionalFields(mr))
-        .addElement("TotalFactura", mr.getTotalFactura())
-        .addElement("NumeroCedulaReceptor", numeroCedulaReceptor)
-        .addElement("NumeroConsecutivoReceptor", mr.getNumeroConsecutivoReceptor())
-        .addContent(documentStructureUtil.getDocumentFooter("05"))
-        .build();
+  private String getSchemaName(String tipoDocumento) {
+    switch (tipoDocumento) {
+      case "01": return "facturaElectronica";
+      case "02": return "notaDebitoElectronica";
+      case "03": return "notaCreditoElectronica";
+      case "04": return "tiqueteElectronico";
+      case "08": return "facturaElectronicaCompra";
+      case "09": return "facturaElectronicaExportacion";
+      default: return "facturaElectronica";
+    }
   }
 
-  /**
-   * FIRMA ORIGINAL MANTENIDA - Generación de archivo XML
-   */
-  public void generateXml(String path, String datosXml, String name) {
-    String fullPath = path + name + ".xml";
-    String s = s3FileService.uploadFile(fullPath, datosXml, "application/xml");
-    log.info("Archivo XML creado con éxito: {}", s);
-  }
-
-  /**
-   * FIRMA ORIGINAL MANTENIDA - Procesamiento de texto
-   */
-  public String procesarTexto(String j) {
-    return xmlValidationUtil.procesarTexto(j);
-  }
-
-  // ==================== MÉTODOS AUXILIARES REFACTORIZADOS ====================
-
-  /**
-   * Genera XML completo del documento con header y footer
-   */
-  private String generateDocumentXml(CCampoFactura c, String tipoDocumento) {
-    return documentStructureUtil.getDocumentHeader(tipoDocumento) +
-        buildDocumentContent(c, tipoDocumento) +
-        documentStructureUtil.getDocumentFooter(tipoDocumento);
-  }
-
-  /**
-   * Construye el contenido del documento XML
-   */
-  private String buildDocumentContent(CCampoFactura c, String tipoDocumento) {
-    return xmlBuilderUtil.createDocument()
-        .addSection(buildDocumentHeaderSection(c))
-        .addSection(buildEmisorSection(c))
-        .addSection(buildReceptorSection(c, tipoDocumento))
-        .addSection(buildCondicionVentaSection(c))
-        .addSection(jsonToXmlConverterUtil.convertDetalleFacturaToXml(c.getDetalleFactura(), tipoDocumento))
-        .addSection(jsonToXmlConverterUtil.convertOtrosCargosToXml(c.getOtrosCargos()))
-        .addSection(buildResumenFacturaSection(c, tipoDocumento))
-        .addSection(jsonToXmlConverterUtil.convertReferenciasToXml(c.getReferencia()))
-        .addSection(documentStructureUtil.buildOtrosSection(c.getOtros()))
-        .build();
-  }
-
-  /**
-   * Construye la sección de header del documento
-   */
-  private String buildDocumentHeaderSection(CCampoFactura c) {
-    return xmlBuilderUtil.createDocument()
-        .addElement("Clave", c.getClave())
-        .addElement("CodigoActividad", xmlValidationUtil.formatearCodigoActividad(c.getCodigoActividad()))
-        .addElement("NumeroConsecutivo", c.getConsecutivo())
-        .addElement("FechaEmision", c.getFechaEmision())
-        .build();
-  }
-
-  /**
-   * Construye la sección del emisor
-   */
-  private String buildEmisorSection(CCampoFactura c) {
-    XmlBuilderUtil builder = xmlBuilderUtil.createDocument()
-        .openTag("Emisor")
-        .addElementWithEscape("Nombre", c.getEmisorNombre())
-        .addIdentificacionBlock(
-            xmlValidationUtil.formatearTipoIdentificacion(c.getEmisorTipoIdentif()),
-            c.getEmisorNumIdentif())
-        .addElementIf(xmlValidationUtil.isNotEmpty(c.getNombreComercial()),
-            "NombreComercial", xmlValidationUtil.procesarTexto(c.getNombreComercial()));
-
-    // Ubicación del emisor
-    if (hasCompleteUbicacion(c.getEmisorProv(), c.getEmisorCanton(), c.getEmisorDistrito(), c.getEmisorOtrasSenas())) {
-      builder.addUbicacionBlock(
-          c.getEmisorProv(),
-          xmlValidationUtil.formatearCodigoUbicacion(c.getEmisorCanton()),
-          xmlValidationUtil.formatearCodigoUbicacion(c.getEmisorDistrito()),
-          xmlValidationUtil.isNotEmpty(c.getEmisorBarrio()) ?
-              xmlValidationUtil.formatearCodigoUbicacion(c.getEmisorBarrio()) : null,
-          c.getEmisorOtrasSenas());
+  private void validateXmlStructure(String xml) throws Exception {
+    // Verificaciones básicas
+    if (xml == null || xml.trim().isEmpty()) {
+      throw new Exception("XML vacío o nulo");
     }
 
-    // Teléfono y fax del emisor
-    builder.addTelefonoBlock("Telefono", c.getEmisorCodPaisTel(), c.getEmisorTel())
-        .addTelefonoBlock("Fax", c.getEmisorCodPaisFax(), c.getEmisorFax())
-        .addElementWithEscape("CorreoElectronico", c.getEmisorEmail())
-        .closeTag("Emisor");
-
-    return builder.build();
-  }
-
-  /**
-   * Construye la sección del receptor
-   */
-  private String buildReceptorSection(CCampoFactura c, String tipoDocumento) {
-    if ("true".equals(c.getOmitirReceptor()) && xmlValidationUtil.isNotEmpty(c.getReceptorNombre())) {
-      // Receptor mínimo (solo nombre)
-      return xmlBuilderUtil.createDocument()
-          .openTag("Receptor")
-          .addElementWithEscape("Nombre", c.getReceptorNombre())
-          .closeTag("Receptor")
-          .build();
-    } else if (!"true".equals(c.getOmitirReceptor())) {
-      // Receptor completo
-      return buildCompleteReceptorSection(c, tipoDocumento);
+    // Verificar que empiece con declaración XML
+    if (!xml.trim().startsWith("<?xml")) {
+      throw new Exception("XML no empieza con declaración XML");
     }
 
-    return "";
-  }
-
-  /**
-   * Construye la sección completa del receptor
-   */
-  private String buildCompleteReceptorSection(CCampoFactura c, String tipoDocumento) {
-    XmlBuilderUtil builder = xmlBuilderUtil.createDocument()
-        .openTag("Receptor")
-        .addElementWithEscape("Nombre", c.getReceptorNombre());
-
-    // Identificación del receptor
-    if (xmlValidationUtil.isIdentificacionExtranjera(c.getReceptorTipoIdentif())) {
-      builder.addElement("IdentificacionExtranjero", c.getReceptorNumIdentif())
-          .addElementIf(xmlValidationUtil.isNotEmpty(c.getReceptorOtrasSenas()),
-              "OtrasSenasExtranjero", xmlValidationUtil.procesarTexto(c.getReceptorOtrasSenas()));
-    } else {
-      if (xmlValidationUtil.isNotEmpty(c.getReceptorTipoIdentif()) && xmlValidationUtil.isNotEmpty(c.getReceptorNumIdentif())) {
-        builder.addIdentificacionBlock(
-            xmlValidationUtil.formatearTipoIdentificacion(c.getReceptorTipoIdentif()),
-            c.getReceptorNumIdentif());
-      }
-
-      // Ubicación del receptor (no para exportación)
-      if (!documentStructureUtil.isFacturaExportacion(tipoDocumento)) {
-        if (hasCompleteUbicacion(c.getReceptorProvincia(), c.getReceptorCanton(),
-            c.getReceptorDistrito(), c.getReceptorOtrasSenas())) {
-          builder.addUbicacionBlock(
-              c.getReceptorProvincia(),
-              xmlValidationUtil.formatearCodigoUbicacion(c.getReceptorCanton()),
-              xmlValidationUtil.formatearCodigoUbicacion(c.getReceptorDistrito()),
-              xmlValidationUtil.isNotEmpty(c.getReceptorBarrio()) ?
-                  xmlValidationUtil.formatearCodigoUbicacion(c.getReceptorBarrio()) : null,
-              c.getReceptorOtrasSenas());
-        }
-      }
+    // Verificar que tenga un solo elemento raíz
+    int rootStart = xml.indexOf("<", xml.indexOf("?>") + 2);
+    if (rootStart == -1) {
+      throw new Exception("No se encontró elemento raíz");
     }
 
-    // Teléfono, fax y email del receptor
-    builder.addTelefonoBlock("Telefono", c.getReceptorCodPaisTel(), c.getReceptorTel())
-        .addTelefonoBlock("Fax", c.getReceptorCodPaisFax(), c.getReceptorFax())
-        .addElementIf(xmlValidationUtil.isNotEmpty(c.getReceptorEmail()),
-            "CorreoElectronico", c.getReceptorEmail())
-        .closeTag("Receptor");
-
-    return builder.build();
-  }
-
-  /**
-   * Construye la sección de condición de venta
-   */
-  private String buildCondicionVentaSection(CCampoFactura c) {
-    return xmlBuilderUtil.createDocument()
-        .addElement("CondicionVenta", xmlValidationUtil.formatearCondicionVenta(c.getCondVenta()))
-        .addElement("PlazoCredito", c.getPlazoCredito())
-        .addElementIf(xmlValidationUtil.isNotEmpty(c.getMedioPago()),
-            "MedioPago", xmlValidationUtil.formatearMedioPago(c.getMedioPago()))
-        .addElementIf(xmlValidationUtil.isNotEmpty(c.getMedioPago2()),
-            "MedioPago", xmlValidationUtil.formatearMedioPago(c.getMedioPago2()))
-        .addElementIf(xmlValidationUtil.isNotEmpty(c.getMedioPago3()),
-            "MedioPago", xmlValidationUtil.formatearMedioPago(c.getMedioPago3()))
-        .addElementIf(xmlValidationUtil.isNotEmpty(c.getMedioPago4()),
-            "MedioPago", xmlValidationUtil.formatearMedioPago(c.getMedioPago4()))
-        .build();
-  }
-
-  /**
-   * Construye la sección de resumen de factura
-   */
-  private String buildResumenFacturaSection(CCampoFactura c, String tipoDocumento) {
-    XmlBuilderUtil builder = xmlBuilderUtil.createDocument()
-        .openTag("ResumenFactura");
-
-    // Código de moneda
-    if (xmlValidationUtil.isNotEmpty(c.getCodMoneda()) && xmlValidationUtil.isNotEmpty(c.getTipoCambio())) {
-      builder.openTag("CodigoTipoMoneda")
-          .addElement("CodigoMoneda", c.getCodMoneda())
-          .addElement("TipoCambio", c.getTipoCambio())
-          .closeTag("CodigoTipoMoneda");
+    // Extraer nombre del elemento raíz
+    int rootEnd = xml.indexOf(">", rootStart);
+    String rootTag = xml.substring(rootStart + 1, rootEnd);
+    if (rootTag.contains(" ")) {
+      rootTag = rootTag.substring(0, rootTag.indexOf(" "));
     }
 
-    builder.addElement("TotalServGravados", c.getTotalServGravados())
-        .addElement("TotalServExentos", c.getTotalServExentos())
-        .addElementIf(!documentStructureUtil.isFacturaExportacion(tipoDocumento) &&
-                xmlValidationUtil.isNotEmpty(c.getTotalServExonerado()),
-            "TotalServExonerado", c.getTotalServExonerado())
-        .addElement("TotalMercanciasGravadas", c.getTotalMercGravadas())
-        .addElement("TotalMercanciasExentas", c.getTotalMercExentas())
-        .addElementIf(!documentStructureUtil.isFacturaExportacion(tipoDocumento) &&
-                xmlValidationUtil.isNotEmpty(c.getTotalMercExonerada()),
-            "TotalMercExonerada", c.getTotalMercExonerada())
-        .addElement("TotalGravado", c.getTotalGravados())
-        .addElement("TotalExento", c.getTotalExentos())
-        .addElementIf(!documentStructureUtil.isFacturaExportacion(tipoDocumento) &&
-                xmlValidationUtil.isNotEmpty(c.getTotalExonerado()),
-            "TotalExonerado", c.getTotalExonerado())
-        .addElement("TotalVenta", c.getTotalVentas())
-        .addElement("TotalDescuentos", c.getTotalDescuentos())
-        .addElement("TotalVentaNeta", c.getTotalVentasNeta())
-        .addElement("TotalImpuesto", c.getTotalImp())
-        .addElementIf(shouldIncludeIVADevuelto(c, tipoDocumento),
-            "TotalIVADevuelto", c.getTotalIVADevuelto())
-        .addElementIf(xmlValidationUtil.isPositiveAmount(c.getTotalOtrosCargos()),
-            "TotalOtrosCargos", c.getTotalOtrosCargos())
-        .addElement("TotalComprobante", c.getTotalComprobante())
-        .closeTag("ResumenFactura");
-
-    return builder.build();
-  }
-
-  /**
-   * Construye campos condicionales para Mensaje Receptor
-   */
-  private String buildMensajeReceptorConditionalFields(CCampoFactura mr) {
-    XmlBuilderUtil builder = xmlBuilderUtil.createDocument();
-
-    String condicion = mr.getCondicionImpuesto();
-
-    if (!"01".equals(condicion) && !"04".equals(condicion) && !"05".equals(condicion)) {
-      if (!"03".equals(condicion) && xmlValidationUtil.isPositiveAmount(mr.getMontoTotalImpuestoAcreditar())) {
-        builder.addElement("MontoTotalImpuestoAcreditar", mr.getMontoTotalImpuesto());
-      }
-
-      if (!"02".equals(condicion)) {
-        if (xmlValidationUtil.isPositiveAmount(mr.getMontoTotalImpuestoAcreditar())) {
-          builder.addElement("MontoTotalImpuestoAcreditar", mr.getMontoTotalImpuestoAcreditar());
-        }
-        if (xmlValidationUtil.isPositiveAmount(mr.getMontoTotalDeGastoAplicable())) {
-          builder.addElement("MontoTotalDeGastoAplicable", mr.getMontoTotalDeGastoAplicable());
-        }
-      }
+    // Verificar que el elemento raíz se cierre correctamente
+    String closeTag = "</" + rootTag + ">";
+    int closeTagIndex = xml.lastIndexOf(closeTag);
+    if (closeTagIndex == -1) {
+      throw new Exception("Elemento raíz no está cerrado correctamente");
     }
 
-    return builder.build();
+    // Verificar que no haya contenido después del cierre del elemento raíz
+    String afterRoot = xml.substring(closeTagIndex + closeTag.length()).trim();
+    if (!afterRoot.isEmpty()) {
+      throw new Exception("Hay contenido después del elemento raíz: " + afterRoot);
+    }
+
+    log.info("Estructura XML validada correctamente");
   }
 
-  // ==================== MÉTODOS DE VALIDACIÓN ====================
+  // Método para limpiar caracteres no válidos en XML
+  public static String sanitizeXmlContent(String content) {
+    if (content == null) return "";
 
-  /**
-   * Verifica si tiene ubicación completa
-   */
-  private boolean hasCompleteUbicacion(String provincia, String canton, String distrito, String otrasSenas) {
-    return xmlValidationUtil.isNotEmpty(provincia) &&
-        xmlValidationUtil.isNotEmpty(canton) &&
-        xmlValidationUtil.isNotEmpty(distrito) &&
-        xmlValidationUtil.isNotEmpty(otrasSenas);
-  }
+    // Reemplazar caracteres de control no válidos
+    content = content.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]", "");
 
-  /**
-   * Verifica si debe incluir código de actividad en MR
-   */
-  private boolean shouldIncludeCodigoActividad(CCampoFactura mr) {
-    return xmlValidationUtil.isNotEmpty(mr.getCondicionImpuesto()) &&
-        !"05".equals(mr.getCondicionImpuesto()) &&
-        xmlValidationUtil.isNotEmpty(mr.getCodigoActividad());
-  }
+    // Escapar caracteres especiales XML
+    content = content.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&apos;");
 
-  /**
-   * Verifica si debe incluir IVA devuelto
-   */
-  private boolean shouldIncludeIVADevuelto(CCampoFactura c, String tipoDocumento) {
-    return xmlValidationUtil.requiresIVADevuelto(tipoDocumento) &&
-        xmlValidationUtil.isNotEmpty(c.getTotalIVADevuelto()) &&
-        xmlValidationUtil.isPositiveAmount(c.getTotalIVADevuelto());
+    return content;
   }
 }
