@@ -14,6 +14,7 @@ import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
 import app.simplestudio.com.service.IFacturaService;
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,9 +30,7 @@ public class NotaDebitoCreditoProcessingUtil {
 
     @Autowired private IEmisorService emisorService;
     @Autowired private IComprobantesElectronicosService comprobantesService;
-    @Autowired private IFacturaService facturaService;
-    @Autowired private FuncionesService funcionesService;
-    @Autowired private FileManagerUtil fileManagerUtil;
+    @Autowired private StorageAdapter storageAdapter;
 
     @Value("${path.upload.files.api}")
     private String pathUploadFilesApi;
@@ -183,9 +182,6 @@ public class NotaDebitoCreditoProcessingUtil {
             String xmlFileName = campoFactura.getClave() + "-factura";
             String xmlPath = basePath + xmlFileName + ".xml";
             String xmlSignedPath = basePath + campoFactura.getClave() + "-factura-sign.xml";
-
-            // Crear directorio si no existe
-            fileManagerUtil.createDirectoryIfNotExists(basePath);
 
             // Guardar XML original
             generaXml.generateXml(basePath, xmlContent, xmlFileName);

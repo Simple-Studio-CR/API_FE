@@ -9,6 +9,7 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.EntityMapperUtil;
 import app.simplestudio.com.util.EnvironmentConfigUtil;
@@ -72,7 +73,7 @@ public class RecepcionController {
   private DocumentTypeUtil documentTypeUtil;
 
   @Autowired
-  private FileManagerUtil fileManagerUtil;
+  private StorageAdapter storageAdapter;
 
   @Autowired
   private XmlValidationUtil xmlValidationUtil;
@@ -558,9 +559,6 @@ public class RecepcionController {
     String xmlFileName = campoFactura.getClave() + "-factura";
     String xmlPath = basePath + xmlFileName + ".xml";
     String xmlSignedPath = basePath + campoFactura.getClave() + "-factura-sign.xml";
-
-    // Crear directorio si no existe
-    fileManagerUtil.createDirectoryIfNotExists(basePath);
 
     // Guardar XML
     _generaXml.generateXml(basePath, xmlContent, xmlFileName);

@@ -1,0 +1,77 @@
+# ===============================================
+# CONFIGURACIÓN DE MIGRACIÓN DISCO LOCAL → S3
+# ===============================================
+
+# Configuración de migración gradual
+migration:
+  # Usar S3 como almacenamiento principal
+  use-s3: true
+
+  # Permitir fallback a disco local si S3 falla
+  fallback-to-disk: true
+
+  # Migrar archivos existentes de disco a S3 automáticamente
+  auto-migrate-existing: false
+
+  # Batch size para migración masiva
+  migration-batch-size: 100
+
+  # Validar consistencia entre disco y S3
+  validate-consistency: true
+
+# Configuración S3 extendida para migración
+cloud:
+  aws:
+    credentials:
+      access-key: DO00KMVVA2PCDAP6B6AV
+      secret-key: 6YFkfXRk1+c+V1RU9gClD61O9ccEn+emEGwZHatNa2g
+    s3:
+      bucket: ssn.soluciones
+      endpoint: https://nyc3.digitaloceanspaces.com
+      region: nyc3
+      prefix: XmlClientes
+      url: https://nyc3.digitaloceanspaces.com/ssn.soluciones
+
+      # Configuraciones específicas para archivos XML
+      xml:
+        # TTL para URLs firmadas (24 horas)
+        signed-url-expiration: 86400
+
+        # Configuración de subfolder structure
+        folders:
+          original: "xml/original"      # XMLs antes de firmar
+          signed: "xml/signed"          # XMLs firmados listos para envío
+          responses: "xml/responses"    # Respuestas de Hacienda
+          certificates: "cert"          # Certificados digitales
+          logos: "logos"               # Logos de empresa
+          temp: "temp"                 # Archivos temporales
+
+        # Metadata para archivos
+        default-metadata:
+          environment: "${spring.profiles.active:dev}"
+          app-version: "4.3"
+
+      # Configuración de retry y timeouts
+      retry:
+        max-attempts: 3
+        backoff-delay: 1000
+
+      timeout:
+        connection: 30000
+        read: 60000
+
+# Path original mantenido durante migración
+path:
+  upload:
+    files:
+      api: /home/XmlClientes/
+
+# Configuración de logs específicos para migración
+logging:
+  level:
+    app.simplestudio.com.service.adapter.StorageAdapter: DEBUG
+    app.simplestudio.com.service.impl.S3StorageServiceImpl: DEBUG
+    software.amazon.awssdk.services.s3: WARN
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{migrationContext}] %logger{36} - %msg%n"

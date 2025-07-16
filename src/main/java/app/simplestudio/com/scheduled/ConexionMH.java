@@ -7,6 +7,7 @@ import app.simplestudio.com.models.entity.MensajeReceptor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
 import app.simplestudio.com.service.IMensajeReceptorService;
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.EmailManagerUtil;
 import app.simplestudio.com.util.EnvironmentConfigUtil;
@@ -60,7 +61,7 @@ public class ConexionMH {
   private ReportGeneratorUtil reportGeneratorUtil;
 
   @Autowired
-  private FileManagerUtil fileManagerUtil;
+  private StorageAdapter  _storageAdapter;
 
   @Autowired
   private JsonProcessorUtil jsonProcessorUtil;
@@ -169,7 +170,7 @@ public class ConexionMH {
 
     // Verificar que existe el archivo XML
     String xmlPath = buildXmlPath(ce);
-    if (!fileManagerUtil.fileExists(xmlPath)) {
+    if (!_storageAdapter.fileExists(xmlPath)) {
       log.info("El XML del documento {} no existe en: {}", ce.getClave(), xmlPath);
       return;
     }

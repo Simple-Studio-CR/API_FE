@@ -1,10 +1,12 @@
 package app.simplestudio.com.util;
 
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.util.ByteArrayDataSource;
 import java.io.File;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,9 @@ public class EmailManagerUtil {
     
     @Value("${path.upload.files.api}")
     private String pathUploadFilesApi;
+
+    @Autowired
+    private StorageAdapter storageAdapter;
     
     /**
      * Configuración para envío de email
@@ -163,21 +168,31 @@ public class EmailManagerUtil {
      */
     private void attachXmlFiles(MimeMessageHelper helper, String clave, String emisorId) throws MessagingException {
         String basePath = pathUploadFilesApi + emisorId + "/";
-        
+
         // XML de respuesta MH
         String responseXmlPath = basePath + clave + "-respuesta-mh.xml";
-        File responseXmlFile = new File(responseXmlPath);
-        if (responseXmlFile.exists()) {
-            FileSystemResource responseXml = new FileSystemResource(responseXmlFile);
-            helper.addAttachment(clave + "-respuesta-mh.xml", responseXml, "application/xml");
+        if (storageAdapter.fileExists(responseXmlPath)) {
+            try {
+                InputStream inputStream = storageAdapter.downloadFile(responseXmlPath);
+                if (inputStream != null) {
+                    helper.addAttachment(clave + "-respuesta-mh.xml", () -> inputStream, "application/xml");
+                }
+            } catch (Exception e) {
+                log.warn("Error adjuntando respuesta MH: {}", e.getMessage());
+            }
         }
-        
+
         // XML firmado
         String signedXmlPath = basePath + clave + "-factura-sign.xml";
-        File signedXmlFile = new File(signedXmlPath);
-        if (signedXmlFile.exists()) {
-            FileSystemResource signedXml = new FileSystemResource(signedXmlFile);
-            helper.addAttachment(clave + "-factura-sign.xml", signedXml, "application/xml");
+        if (storageAdapter.fileExists(signedXmlPath)) {
+            try {
+                InputStream inputStream = storageAdapter.downloadFile(signedXmlPath);
+                if (inputStream != null) {
+                    helper.addAttachment(clave + "-factura-sign.xml", () -> inputStream, "application/xml");
+                }
+            } catch (Exception e) {
+                log.warn("Error adjuntando XML firmado: {}", e.getMessage());
+            }
         }
     }
     

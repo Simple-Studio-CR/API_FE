@@ -4,6 +4,7 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.TokenControl;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.ITokenControlService;
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.FileManagerUtil;
 import app.simplestudio.com.util.HttpClientUtil;
 import app.simplestudio.com.util.JsonProcessorUtil;
@@ -56,9 +57,8 @@ public class Sender {
   private JsonProcessorUtil jsonProcessorUtil;
 
   @Autowired
-  private FileManagerUtil fileManagerUtil;
+  private StorageAdapter storageAdapter;
 
-  private int timeoutMH = 35;
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   /**
@@ -85,7 +85,7 @@ public class Sender {
    * FIRMA ORIGINAL MANTENIDA - generateXml
    */
   public void generateXml(String path, String datosXml, String name) throws Exception {
-    fileManagerUtil.saveToFile(path + name + ".xml", datosXml);
+    storageAdapter.saveToFile(path + name + ".xml", datosXml);
     log.info("Archivo creado con éxito");
   }
 
@@ -427,7 +427,7 @@ public class Sender {
    * Construye JSON desde archivo XML
    */
   private String buildJsonFromXmlFile(String xmlPath, String tipoDocumento) throws Exception {
-    String xmlContent = fileManagerUtil.readFromFile(xmlPath);
+    String xmlContent = storageAdapter.readFromFile(xmlPath);
     return convertXmlToJsonForSending(xmlContent);
   }
 

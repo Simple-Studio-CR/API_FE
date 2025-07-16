@@ -1,5 +1,6 @@
 package app.simplestudio.com.util;
 
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +29,9 @@ public class DownloadXmlUtil {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+
     @Autowired
-    private FileManagerUtil fileManagerUtil;
+    private StorageAdapter storageAdapter;
 
     @Value("${path.upload.files.api}")
     private String pathUploadFilesApi;
@@ -222,43 +224,17 @@ public class DownloadXmlUtil {
         }
 
         try {
-            File file = new File(filePath);
 
-            // Verificar existencia
-            if (!file.exists()) {
+            if (!storageAdapter.fileExists(filePath)) {
                 result.put("valid", false);
                 result.put("errorCode", "404");
                 result.put("errorMessage", "Documento no existe");
                 return result;
             }
 
-            // Verificar que es archivo (no directorio)
-            if (!file.isFile()) {
-                result.put("valid", false);
-                result.put("errorCode", "400");
-                result.put("errorMessage", "La ruta no corresponde a un archivo");
-                return result;
-            }
-
-            // Verificar legibilidad
-            if (!file.canRead()) {
-                result.put("valid", false);
-                result.put("errorCode", "403");
-                result.put("errorMessage", "Archivo no legible");
-                return result;
-            }
-
-            // Verificar tamaño
-            long fileSize = file.length();
-            if (fileSize > MAX_FILE_SIZE) {
-                result.put("valid", false);
-                result.put("errorCode", "413");
-                result.put("errorMessage", "Archivo demasiado grande");
-                return result;
-            }
 
             result.put("valid", true);
-            result.put("fileSize", fileSize);
+            result.put("fileSize", 0L);
             return result;
 
         } catch (Exception e) {
@@ -455,11 +431,9 @@ public class DownloadXmlUtil {
         // Verificar directorio base
         if (pathUploadFilesApi == null || pathUploadFilesApi.trim().isEmpty()) {
             issues.append("path.upload.files.api no configurado; ");
-        } else if (!fileManagerUtil.directoryExists(pathUploadFilesApi)) {
-            issues.append("Directorio base no existe: ").append(pathUploadFilesApi).append("; ");
         }
 
-        if (issues.length() > 0) {
+        if (!issues.isEmpty()) {
             result.put("valid", false);
             result.put("issues", issues.toString());
             log.warn("Problemas de configuración del sistema de descarga: {}", issues);

@@ -1,6 +1,7 @@
 package app.simplestudio.com.util;
 
 import app.simplestudio.com.models.entity.ComprobantesElectronicos;
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -19,7 +20,7 @@ public class ResendDocumentUtil {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private FileManagerUtil fileManagerUtil;
+    private StorageAdapter storageAdapter;
 
     @Autowired
     private DocumentTypeUtil documentTypeUtil;
@@ -115,8 +116,8 @@ public class ResendDocumentUtil {
         String respuestaMhPath = filePaths.get("respuestaMh");
         String facturaSignPath = filePaths.get("facturaSign");
         
-        boolean respuestaMhExists = fileManagerUtil.fileExists(respuestaMhPath);
-        boolean facturaSignExists = fileManagerUtil.fileExists(facturaSignPath);
+        boolean respuestaMhExists = storageAdapter.fileExists(respuestaMhPath);
+        boolean facturaSignExists = storageAdapter.fileExists(facturaSignPath);
         
         if (!respuestaMhExists) {
             log.warn("Archivo respuesta MH no existe: {}", respuestaMhPath);

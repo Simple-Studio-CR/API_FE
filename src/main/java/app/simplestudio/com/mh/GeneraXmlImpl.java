@@ -1,5 +1,6 @@
 package app.simplestudio.com.mh;
 
+import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.DocumentStructureUtil;
 import app.simplestudio.com.util.FileManagerUtil;
 import app.simplestudio.com.util.JsonToXmlConverterUtil;
@@ -16,8 +17,6 @@ public class GeneraXmlImpl implements IGeneraXml {
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   // ==================== SERVICIOS ORIGINALES ====================
-  @Autowired
-  private FuncionesService _funcionesService;
 
   // ==================== NUEVOS UTILS ====================
   @Autowired
@@ -33,7 +32,7 @@ public class GeneraXmlImpl implements IGeneraXml {
   private JsonToXmlConverterUtil jsonToXmlConverterUtil;
 
   @Autowired
-  private FileManagerUtil fileManagerUtil;
+  private StorageAdapter storageAdapter;
 
   // ==================== MÉTODOS ORIGINALES MANTENIDOS ====================
 
@@ -93,7 +92,7 @@ public class GeneraXmlImpl implements IGeneraXml {
    */
   public void generateXml(String path, String datosXml, String name) throws Exception {
     String fullPath = path + name + ".xml";
-    fileManagerUtil.saveToFile(fullPath, datosXml);
+    storageAdapter.saveToFile(fullPath, datosXml);
     log.info("Archivo XML creado con éxito: {}", fullPath);
   }
 
