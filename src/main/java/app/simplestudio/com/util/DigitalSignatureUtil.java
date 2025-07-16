@@ -1,8 +1,7 @@
 package app.simplestudio.com.util;
 
-import app.simplestudio.com.service.adapter.StorageAdapter;
+import app.simplestudio.com.service.storage.S3FileService;
 import java.io.File;
-import java.io.StringWriter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -32,7 +31,7 @@ public class DigitalSignatureUtil {
     private XadesSignatureUtil xadesSignatureUtil;
     
     @Autowired
-    private StorageAdapter fileManagerUtil;
+    private S3FileService s3FileService;
     
     /**
      * Resultado de la operación de firma
@@ -149,7 +148,7 @@ public class DigitalSignatureUtil {
         }
         
         // Validar que el archivo XML existe
-        if (!fileManagerUtil.fileExists(params.getXmlInputPath())) {
+        if (!s3FileService.fileExists(params.getXmlInputPath())) {
             throw new Exception("El archivo XML no existe: " + params.getXmlInputPath());
         }
         
@@ -207,11 +206,6 @@ public class DigitalSignatureUtil {
         try {
             // Crear directorio si no existe
             File outputFile = new File(outputPath);
-            File parentDir = outputFile.getParentFile();
-            if (parentDir != null && !parentDir.exists()) {
-                fileManagerUtil.createDirectoryIfNotExists(parentDir.getAbsolutePath());
-            }
-            
             // Configurar transformer
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();

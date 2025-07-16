@@ -7,7 +7,7 @@ import app.simplestudio.com.models.entity.MensajeReceptor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
 import app.simplestudio.com.service.IMensajeReceptorService;
-import app.simplestudio.com.service.adapter.StorageAdapter;
+import app.simplestudio.com.service.storage.S3FileService;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.EmailManagerUtil;
 import app.simplestudio.com.util.EnvironmentConfigUtil;
@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -60,7 +59,7 @@ public class ConexionMH {
   private ReportGeneratorUtil reportGeneratorUtil;
 
   @Autowired
-  private StorageAdapter  _storageAdapter;
+  private S3FileService s3FileService;
 
   @Autowired
   private JsonProcessorUtil jsonProcessorUtil;
@@ -169,7 +168,7 @@ public class ConexionMH {
 
     // Verificar que existe el archivo XML
     String xmlPath = buildXmlPath(ce);
-    if (!_storageAdapter.fileExists(xmlPath)) {
+    if (!s3FileService.fileExists(xmlPath)) {
       log.info("El XML del documento {} no existe en: {}", ce.getClave(), xmlPath);
       return;
     }

@@ -4,12 +4,13 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.TokenControl;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.ITokenControlService;
-import app.simplestudio.com.service.adapter.StorageAdapter;
+import app.simplestudio.com.service.storage.S3FileService;
 import app.simplestudio.com.util.HttpClientUtil;
 import app.simplestudio.com.util.JsonProcessorUtil;
 import app.simplestudio.com.util.XmlParserUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -45,6 +46,9 @@ public class Sender {
   @Autowired
   private FuncionesService _funcionesService;
 
+  @Autowired
+  private S3FileService s3FileService;
+
   // Nuevas clases auxiliares
   @Autowired
   private HttpClientUtil httpClientUtil;
@@ -55,8 +59,6 @@ public class Sender {
   @Autowired
   private JsonProcessorUtil jsonProcessorUtil;
 
-  @Autowired
-  private StorageAdapter storageAdapter;
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -84,7 +86,7 @@ public class Sender {
    * FIRMA ORIGINAL MANTENIDA - generateXml
    */
   public void generateXml(String path, String datosXml, String name) throws Exception {
-    storageAdapter.saveToFile(path + name + ".xml", datosXml);
+    String s = s3FileService.uploadFile(path + name, datosXml, "application/xml");
     log.info("Archivo creado con éxito");
   }
 
@@ -426,7 +428,7 @@ public class Sender {
    * Construye JSON desde archivo XML
    */
   private String buildJsonFromXmlFile(String xmlPath, String tipoDocumento) throws Exception {
-    String xmlContent = storageAdapter.readFromFile(xmlPath);
+    String xmlContent = s3FileService.downloadFileAsString(xmlPath);
     return convertXmlToJsonForSending(xmlContent);
   }
 
@@ -490,7 +492,7 @@ public class Sender {
     Map<String, Object> res = objectMapper.readValue(rawResponse, new TypeReference<Map<String, Object>>() {});
 
     String respuestaXML = (String) res.get("respuesta-xml");
-    respuestaXML = new String(Base64.decodeBase64(respuestaXML), "UTF-8");
+    respuestaXML = new String(Base64.decodeBase64(respuestaXML), StandardCharsets.UTF_8);
 
     // Guardar XML de respuesta
     generateXml(pathUploadFilesApi, respuestaXML, res.get("clave") + "-respuesta-mh");

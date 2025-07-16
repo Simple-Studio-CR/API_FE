@@ -1,7 +1,7 @@
 package app.simplestudio.com.util;
 
 import app.simplestudio.com.models.entity.ComprobantesElectronicos;
-import app.simplestudio.com.service.adapter.StorageAdapter;
+import app.simplestudio.com.service.storage.S3FileService;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -20,13 +20,13 @@ public class ResendDocumentUtil {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private StorageAdapter storageAdapter;
-
-    @Autowired
     private DocumentTypeUtil documentTypeUtil;
 
     @Value("${path.upload.files.api}")
     private String pathUploadFilesApi;
+
+    @Autowired
+    private S3FileService s3FileService;
 
     @Value("${url.qr}")
     private String urlQr;
@@ -116,8 +116,8 @@ public class ResendDocumentUtil {
         String respuestaMhPath = filePaths.get("respuestaMh");
         String facturaSignPath = filePaths.get("facturaSign");
         
-        boolean respuestaMhExists = storageAdapter.fileExists(respuestaMhPath);
-        boolean facturaSignExists = storageAdapter.fileExists(facturaSignPath);
+        boolean respuestaMhExists = s3FileService.fileExists(respuestaMhPath);
+        boolean facturaSignExists = s3FileService.fileExists(facturaSignPath);
         
         if (!respuestaMhExists) {
             log.warn("Archivo respuesta MH no existe: {}", respuestaMhPath);

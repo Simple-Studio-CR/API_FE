@@ -9,7 +9,6 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
-import app.simplestudio.com.service.adapter.StorageAdapter;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.EntityMapperUtil;
 import app.simplestudio.com.util.EnvironmentConfigUtil;
@@ -70,9 +69,6 @@ public class RecepcionController {
 
   @Autowired
   private DocumentTypeUtil documentTypeUtil;
-
-  @Autowired
-  private StorageAdapter storageAdapter;
 
   @Autowired
   private XmlValidationUtil xmlValidationUtil;

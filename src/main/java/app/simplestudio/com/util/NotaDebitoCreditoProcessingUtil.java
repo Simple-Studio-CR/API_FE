@@ -5,7 +5,6 @@ import app.simplestudio.com.dto.ConsecutiveCalculationResult;
 import app.simplestudio.com.dto.EmisorValidationResult;
 import app.simplestudio.com.dto.TerminalValidationResult;
 import app.simplestudio.com.mh.CCampoFactura;
-import app.simplestudio.com.mh.FuncionesService;
 import app.simplestudio.com.mh.IGeneraXml;
 import app.simplestudio.com.mh.ISigner;
 import app.simplestudio.com.models.entity.CTerminal;
@@ -13,8 +12,6 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
-import app.simplestudio.com.service.IFacturaService;
-import app.simplestudio.com.service.adapter.StorageAdapter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +27,6 @@ public class NotaDebitoCreditoProcessingUtil {
 
     @Autowired private IEmisorService emisorService;
     @Autowired private IComprobantesElectronicosService comprobantesService;
-    @Autowired private StorageAdapter storageAdapter;
 
     @Value("${path.upload.files.api}")
     private String pathUploadFilesApi;

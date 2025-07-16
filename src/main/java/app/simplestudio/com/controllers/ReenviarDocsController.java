@@ -4,7 +4,7 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
-import app.simplestudio.com.service.adapter.StorageAdapter;
+import app.simplestudio.com.service.storage.S3FileService;
 import app.simplestudio.com.util.DocumentTypeUtil;
 import app.simplestudio.com.util.ReportGeneratorUtil;
 import app.simplestudio.com.util.ResendDocumentUtil;
@@ -57,7 +57,7 @@ public class ReenviarDocsController {
   private ReportGeneratorUtil reportGeneratorUtil;
 
   @Autowired
-  private StorageAdapter storageAdapter;
+  private S3FileService s3FileService;
 
   @Autowired
   private ResendDocumentUtil resendDocumentUtil;
@@ -238,7 +238,7 @@ public class ReenviarDocsController {
   private void attachXmlFiles(MimeMessageHelper helper, Map<String, String> xmlPaths, String clave) throws Exception {
     // Adjuntar respuesta de Hacienda
     String respuestaMhPath = xmlPaths.get("respuestaMh");
-    if (storageAdapter.fileExists(respuestaMhPath)) {
+    if (s3FileService.fileExists(respuestaMhPath)) {
       FileSystemResource respuestaMhFile = new FileSystemResource(new File(respuestaMhPath));
       helper.addAttachment(clave + "-respuesta-mh.xml", respuestaMhFile, "application/xml");
       log.debug("Adjuntado archivo respuesta MH: {}", respuestaMhPath);
@@ -246,7 +246,7 @@ public class ReenviarDocsController {
 
     // Adjuntar factura firmada
     String facturaSignPath = xmlPaths.get("facturaSign");
-    if (storageAdapter.fileExists(facturaSignPath)) {
+    if (s3FileService.fileExists(facturaSignPath)) {
       FileSystemResource facturaSignFile = new FileSystemResource(new File(facturaSignPath));
       helper.addAttachment(clave + "-factura-sign.xml", facturaSignFile, "application/xml");
       log.debug("Adjuntado archivo factura firmada: {}", facturaSignPath);

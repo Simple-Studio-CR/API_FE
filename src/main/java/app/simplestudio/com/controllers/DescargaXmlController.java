@@ -1,6 +1,6 @@
 package app.simplestudio.com.controllers;
 
-import app.simplestudio.com.service.adapter.StorageAdapter;
+import app.simplestudio.com.service.storage.S3FileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ public class DescargaXmlController {
   private static final Logger log = LoggerFactory.getLogger(DescargaXmlController.class);
 
   @Autowired
-  private StorageAdapter storageAdapter;
+  private S3FileService s3FileService;
 
   /**
    * Descarga archivos XML usando únicamente S3
@@ -44,7 +44,7 @@ public class DescargaXmlController {
         return validation;
       }
       // Obtener el archivo como Resource desde S3
-      Resource resource = storageAdapter.getXmlAsResource(identificacion, filename);
+      Resource resource = s3FileService.getXmlAsResource(identificacion, filename);
 
       if (resource == null || !resource.exists()) {
         log.error("Error obteniendo recurso de S3 - Emisor: {}, Archivo: {}", identificacion, filename);

@@ -4,6 +4,8 @@ import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
+import app.simplestudio.com.service.storage.S3FileService;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,17 +26,17 @@ public class ReportService {
     private final DataSource dataSource;
     private final IComprobantesElectronicosService comprobantesService;
     private final IEmisorService emisorService;
-    private final S3Funciones s3Funciones;
+    private final S3FileService s3FileService;
 
     public ReportService(
             DataSource dataSource,
             IComprobantesElectronicosService comprobantesService,
             IEmisorService emisorService,
-            S3Funciones s3Funciones) {
+        S3FileService s3FileService) {
         this.dataSource = dataSource;
         this.comprobantesService = comprobantesService;
         this.emisorService = emisorService;
-        this.s3Funciones = s3Funciones;
+        this.s3FileService = s3FileService;
         log.info("ReportService initialized");
     }
 
@@ -68,18 +70,17 @@ public class ReportService {
 
         // Preparar parámetros para JasperReports
         String tipoDoc = mapTipoDocumento(ce.getTipoDocumento());
-        String baseUrl = getClass().getResource("/").toString();
-        String logoUrl = s3Funciones.getLogoUrl(emisor);
-        String qrUrl = "" + clave;
+        String baseUrl = Objects.requireNonNull(getClass().getResource("/")).toString();
+        String logoUrl = s3FileService.getLogoUrl(emisor);
 
-        Map<String, Object> params = new HashMap<>();
+      Map<String, Object> params = new HashMap<>();
         params.put("BASE_URL", baseUrl);
         params.put("BASE_URL_LOGO", logoUrl);
         params.put("CLAVE_FACTURA", clave);
         params.put("TIPO_DOCUMENTO", tipoDoc);
         params.put("RESOLUCION", "Autorizada mediante resolución Nº DGT-R-033-2019 del 20/06/2019");
         params.put("NOTA_FACTURA", emisor.getNataFactura());
-        params.put("URL_QR", qrUrl);
+        params.put("URL_QR", clave);
 
         // Generar PDF con try-with-resources
         try (Connection conn = dataSource.getConnection();

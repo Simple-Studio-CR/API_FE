@@ -1,18 +1,16 @@
 package app.simplestudio.com.util;
 
-import app.simplestudio.com.service.adapter.StorageAdapter;
+import app.simplestudio.com.service.storage.S3FileService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.util.ByteArrayDataSource;
-import java.io.File;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
@@ -32,7 +30,7 @@ public class EmailManagerUtil {
     private String pathUploadFilesApi;
 
     @Autowired
-    private StorageAdapter storageAdapter;
+    private S3FileService s3FileService;
     
     /**
      * Configuración para envío de email
@@ -171,9 +169,9 @@ public class EmailManagerUtil {
 
         // XML de respuesta MH
         String responseXmlPath = basePath + clave + "-respuesta-mh.xml";
-        if (storageAdapter.fileExists(responseXmlPath)) {
+        if (s3FileService.fileExists(responseXmlPath)) {
             try {
-                InputStream inputStream = storageAdapter.downloadFile(responseXmlPath);
+                InputStream inputStream = s3FileService.downloadFile(responseXmlPath);
                 if (inputStream != null) {
                     helper.addAttachment(clave + "-respuesta-mh.xml", () -> inputStream, "application/xml");
                 }
@@ -184,9 +182,9 @@ public class EmailManagerUtil {
 
         // XML firmado
         String signedXmlPath = basePath + clave + "-factura-sign.xml";
-        if (storageAdapter.fileExists(signedXmlPath)) {
+        if (s3FileService.fileExists(signedXmlPath)) {
             try {
-                InputStream inputStream = storageAdapter.downloadFile(signedXmlPath);
+                InputStream inputStream = s3FileService.downloadFile(signedXmlPath);
                 if (inputStream != null) {
                     helper.addAttachment(clave + "-factura-sign.xml", () -> inputStream, "application/xml");
                 }
