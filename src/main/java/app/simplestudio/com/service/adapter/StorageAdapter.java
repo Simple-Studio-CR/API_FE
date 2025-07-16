@@ -160,7 +160,7 @@ public class StorageAdapter {
      * Guarda XML original antes de firmar
      */
     public void saveXmlFile(String emisorId, String xmlFileName, String xmlContent) throws Exception {
-        String s3Key = storageService.buildKey(emisorId, "xml", "original", xmlFileName + ".xml");
+        String s3Key = storageService.buildKey(emisorId, xmlFileName + ".xml");
         storageService.uploadFile(s3Key, xmlContent, "application/xml");
         log.info("XML original guardado: {}", s3Key);
     }
@@ -169,7 +169,7 @@ public class StorageAdapter {
      * Guarda XML firmado
      */
     public void saveSignedXmlFile(String emisorId, String xmlFileName, String xmlContent) throws Exception {
-        String s3Key = storageService.buildKey(emisorId, "xml", "signed", xmlFileName + ".xml");
+        String s3Key = storageService.buildKey(emisorId, xmlFileName + ".xml");
         storageService.uploadFile(s3Key, xmlContent, "application/xml");
         log.info("XML firmado guardado: {}", s3Key);
     }
@@ -178,7 +178,7 @@ public class StorageAdapter {
      * Guarda respuesta de Hacienda
      */
     public void saveResponseXmlFile(String emisorId, String xmlFileName, String xmlContent) throws Exception {
-        String s3Key = storageService.buildKey(emisorId, "xml", "responses", xmlFileName + ".xml");
+        String s3Key = storageService.buildKey(emisorId, xmlFileName + ".xml");
         storageService.uploadFile(s3Key, xmlContent, "application/xml");
         log.info("Respuesta MH guardada: {}", s3Key);
     }
@@ -187,7 +187,7 @@ public class StorageAdapter {
      * Lee XML firmado
      */
     public String readSignedXmlFile(String emisorId, String xmlFileName) throws Exception {
-        String s3Key = storageService.buildKey(emisorId, "xml", "signed", xmlFileName + ".xml");
+        String s3Key = storageService.buildKey(emisorId, xmlFileName + ".xml");
         return storageService.downloadFileAsString(s3Key);
     }
 
@@ -195,7 +195,7 @@ public class StorageAdapter {
      * Lee respuesta de Hacienda
      */
     public String readResponseXmlFile(String emisorId, String xmlFileName) throws Exception {
-        String s3Key = storageService.buildKey(emisorId, "xml", "responses", xmlFileName + ".xml");
+        String s3Key = storageService.buildKey(emisorId, xmlFileName + ".xml");
         return storageService.downloadFileAsString(s3Key);
     }
 
@@ -203,7 +203,7 @@ public class StorageAdapter {
      * Verifica si XML firmado existe
      */
     public boolean signedXmlExists(String emisorId, String xmlFileName) {
-        String s3Key = storageService.buildKey(emisorId, "xml", "signed", xmlFileName + ".xml");
+        String s3Key = storageService.buildKey(emisorId, xmlFileName + ".xml");
         return storageService.fileExists(s3Key);
     }
 
@@ -211,7 +211,7 @@ public class StorageAdapter {
      * Verifica si respuesta de Hacienda existe
      */
     public boolean responseXmlExists(String emisorId, String xmlFileName) {
-        String s3Key = storageService.buildKey(emisorId, "xml", "responses", xmlFileName + ".xml");
+        String s3Key = storageService.buildKey(emisorId, xmlFileName + ".xml");
         return storageService.fileExists(s3Key);
     }
 
@@ -241,7 +241,7 @@ public class StorageAdapter {
      */
     public Resource getXmlAsResource(String emisorId, String xmlFileName) throws Exception {
         if (useS3) {
-            String s3Key = storageService.buildKey(emisorId, "xml", "signed", xmlFileName);
+            String s3Key = storageService.buildKey(emisorId, xmlFileName);
             try (InputStream inputStream = storageService.downloadFile(s3Key)) {
                 if (inputStream != null) {
                     // Crear recurso temporal desde S3
@@ -263,7 +263,7 @@ public class StorageAdapter {
      * Lista archivos XML firmados pendientes de envío
      */
     public List<String> listPendingXmlFiles(String emisorId) {
-        String prefix = storageService.buildKey(emisorId, "xml", "signed", "");
+        String prefix = storageService.buildKey(emisorId, "");
         return storageService.listFiles(prefix);
     }
 
@@ -309,7 +309,7 @@ public class StorageAdapter {
         // Determinar subcarpeta basada en el nombre del archivo
         String subfolder = determineSubfolder(fileName);
 
-        return storageService.buildKey(emisorId, "xml", subfolder, fileName);
+        return storageService.buildKey(emisorId, fileName);
     }
 
     /**

@@ -61,19 +61,8 @@ public interface IStorageService {
     /**
      * Construye la key completa para el storage
      * @param emisorId - ID del emisor
-     * @param folder - Carpeta (xml, cert, reports)
-     * @param subfolder - Subcarpeta (signed, responses)
      * @param filename - Nombre del archivo
      * @return Key completa para S3
      */
-    String buildKey(String emisorId, String folder, String subfolder, String filename);
-    
-    /**
-     * Construye la key completa para el storage (sin subcarpeta)
-     * @param emisorId - ID del emisor  
-     * @param folder - Carpeta
-     * @param filename - Nombre del archivo
-     * @return Key completa para S3
-     */
-    String buildKey(String emisorId, String folder, String filename);
+    String buildKey(String emisorId,  String filename);
 }

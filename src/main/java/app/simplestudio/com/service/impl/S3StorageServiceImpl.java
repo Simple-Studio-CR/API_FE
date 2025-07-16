@@ -149,17 +149,11 @@ public class S3StorageServiceImpl implements IStorageService {
             return List.of();
         }
     }
-    
+
     @Override
-    public String buildKey(String emisorId, String folder, String subfolder, String filename) {
-        return String.format("%s/%s/%s/%s/%s", 
-                storageProperties.getPrefix(), emisorId, folder, subfolder, filename);
-    }
-    
-    @Override
-    public String buildKey(String emisorId, String folder, String filename) {
-        return String.format("%s/%s/%s/%s", 
-                storageProperties.getPrefix(), emisorId, folder, filename);
+    public String buildKey(String emisorId, String filename) {
+        return String.format("%s/%s/%s",
+                storageProperties.getPrefix(), emisorId, filename);
     }
     
     private String buildUrl(String key) {
