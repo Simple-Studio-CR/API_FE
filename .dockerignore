@@ -1,0 +1,57 @@
+# Archivos de desarrollo
+.git
+.gitignore
+README.md
+.env
+.env.local
+.env.production
+
+# Archivos de Maven
+target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Certificados y keys (no incluir en imagen)
+*.p12
+*.jks
+*.key
+*.crt
+*.pem
+
+# Archivos de configuración local
+application-local.properties
+application-dev.properties
+
+# Node modules si existen
+node_modules/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
