@@ -12,22 +12,67 @@ public class DocumentTypeUtil {
         if (td == null)
             return "";
 
-        switch (td.toUpperCase()) {
-            case "FE":
-                return "Factura Electrónica";
-            case "ND":
-                return "Nota de débito Electrónica";
-            case "NC":
-                return "Nota de crédito Electrónica";
-            case "TE":
-                return "Tiquete Electrónico";
-            case "FEC":
-                return "Factura Electrónica Compra";
-            case "FEE":
-                return "Factura Electrónica Exportación";
-            default:
-                return "";
-        }
+      return switch (td.toUpperCase()) {
+        case "FE" -> "Factura Electrónica";
+        case "ND" -> "Nota de débito Electrónica";
+        case "NC" -> "Nota de crédito Electrónica";
+        case "TE" -> "Tiquete Electrónico";
+        case "FEC" -> "Factura Electrónica Compra";
+        case "FEE" -> "Factura Electrónica Exportación";
+        default -> "";
+      };
+    }
+
+    public String getCodigoNumerico(String td) {
+        if (td == null) return "";
+
+        return switch (td.toUpperCase()) {
+            case "FE" -> "01";   // Factura Electrónica
+            case "NC" -> "02";   // Nota de Crédito
+            case "ND" -> "03";   // Nota de Débito
+            case "TE" -> "04";   // Tiquete Electrónico
+            case "CCE" -> "05";  // Confirming Contado Electrónico (si aplica)
+            case "CPCE" -> "06"; // Confirming Plazo Crédito Electrónico (si aplica)
+            case "RCE" -> "07";  // Rechazo Comrobante Electrónico (si aplica)
+            case "FEC" -> "08";  // Factura Electrónica Compra
+            case "FEE" -> "09";  // Factura Electrónica Exportación
+            default -> "";
+        };
+    }
+
+    /**
+     * Convierte situación a código numérico para la clave
+     */
+    public String getCodigoSituacion(String situacion) {
+        if (situacion == null) return "1";
+
+        return switch (situacion.toLowerCase().trim()) {
+            case "normal" -> "1";           // Situación normal
+            case "contingencia" -> "2";     // Contingencia
+            case "sin internet" -> "3";     // Sin conexión a internet
+            default -> "1";                 // Default: normal
+        };
+    }
+
+    /**
+     * Convierte código a descripción legible
+     */
+    public String getDescripcionSituacion(String codigo) {
+        if (codigo == null) return "Normal";
+
+        return switch (codigo) {
+            case "1" -> "Normal";
+            case "2" -> "Contingencia";
+            case "3" -> "Sin internet";
+            default -> "Normal";
+        };
+    }
+
+    /**
+     * Valida si el código de situación es válido
+     */
+    public boolean isCodigoValido(String codigo) {
+        return codigo != null && (codigo.equals("1") || codigo.equals("2") || codigo.equals("3"));
     }
 
     /**

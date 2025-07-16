@@ -2,11 +2,13 @@ package app.simplestudio.com.util;
 
 import app.simplestudio.com.mh.DirectPasswordProvider;
 import app.simplestudio.com.mh.FirstCertificateSelector;
+import app.simplestudio.com.service.storage.S3FileService;
 import java.io.File;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import xades4j.providers.KeyingDataProvider;
 import xades4j.providers.impl.FileSystemKeyStoreKeyingDataProvider;
@@ -15,6 +17,9 @@ import xades4j.providers.impl.FileSystemKeyStoreKeyingDataProvider;
 public class CertificateManagerUtil {
     
     private static final Logger log = LoggerFactory.getLogger(CertificateManagerUtil.class);
+
+    @Autowired
+    private S3FileService s3FileService;
     
     /**
      * Configuración de certificado para firma
@@ -79,7 +84,7 @@ public class CertificateManagerUtil {
      */
     public KeyingDataProvider createKeyingDataProvider(CertificateConfig config) throws Exception {
         validateCertificateConfig(config);
-        
+
         try {
             FileSystemKeyStoreKeyingDataProvider provider = new FileSystemKeyStoreKeyingDataProvider(
                 config.getKeyStoreType(),
@@ -89,10 +94,10 @@ public class CertificateManagerUtil {
                 new DirectPasswordProvider(config.getPassword()),
                 false // No protection domain
             );
-            
+
             log.info("KeyingDataProvider creado exitosamente para: {}", config.getKeyStorePath());
             return provider;
-            
+
         } catch (Exception e) {
             log.error("Error creando KeyingDataProvider: {}", e.getMessage());
             throw new Exception("No se pudo crear el proveedor de certificados: " + e.getMessage(), e);
@@ -106,26 +111,22 @@ public class CertificateManagerUtil {
         if (config == null) {
             throw new IllegalArgumentException("La configuración del certificado no puede ser nula");
         }
-        
+
         if (config.getKeyStorePath() == null || config.getKeyStorePath().trim().isEmpty()) {
             throw new IllegalArgumentException("La ruta del keystore es requerida");
         }
-        
+
         if (config.getPassword() == null || config.getPassword().trim().isEmpty()) {
             throw new IllegalArgumentException("La contraseña del certificado es requerida");
         }
-        
-        // Verificar que el archivo existe
-        File keystoreFile = new File(config.getKeyStorePath());
-        if (!keystoreFile.exists()) {
+
+        // CAMBIO: Verificar que el archivo existe en S3 en lugar de disco local
+        if (!s3FileService.fileExists(config.getKeyStorePath())) {
+            log.error("Certificado no encontrado en S3: {}", config.getKeyStorePath());
             throw new Exception("El archivo de certificado no existe: " + config.getKeyStorePath());
         }
-        
-        if (!keystoreFile.canRead()) {
-            throw new Exception("No se puede leer el archivo de certificado: " + config.getKeyStorePath());
-        }
-        
-        log.debug("Configuración del certificado validada exitosamente");
+
+        log.debug("Configuración del certificado validada exitosamente para S3");
     }
 
 

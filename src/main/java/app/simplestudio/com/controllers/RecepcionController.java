@@ -290,17 +290,7 @@ public class RecepcionController {
     Long consecutivo = invoiceProcessingUtil.calculateConsecutive(terminal, existing, tipoDocumento);
 
     // Generar clave
-    String clave = _sender.getClave(
-        documentTypeUtil.tipoDocumento(tipoDocumento),
-        emisor.getTipoDeIdentificacion().getId().toString(),
-        emisor.getIdentificacion(),
-        requestData.path("situacion").asText(),
-        "506",
-        consecutivo.toString(),
-        "00000001",
-        xmlValidationUtil.str_pad(requestData.path("sucursal").asText(), 3, "0", "STR_PAD_LEFT"),
-        xmlValidationUtil.str_pad(requestData.path("terminal").asText(), 5, "0", "STR_PAD_LEFT")
-    );
+    String clave = invoiceProcessingUtil.generateClave(tipoDocumento, consecutivo, emisor, requestData);
 
     clave = extractClaveFromJsonResponse(clave);
 
@@ -350,17 +340,7 @@ public class RecepcionController {
     Long consecutivo = invoiceProcessingUtil.calculateConsecutive(terminal, existing, "FEC");
 
     // Generar clave
-    String clave = _sender.getClave(
-        "08", // FEC
-        emisor.getTipoDeIdentificacion().getId().toString(),
-        emisor.getIdentificacion(),
-        requestData.path("situacion").asText(),
-        "506",
-        consecutivo.toString(),
-        "00000001",
-        xmlValidationUtil.str_pad(requestData.path("sucursal").asText(), 3, "0", "STR_PAD_LEFT"),
-        xmlValidationUtil.str_pad(requestData.path("terminal").asText(), 5, "0", "STR_PAD_LEFT")
-    );
+    String clave = invoiceProcessingUtil.generateClave("08", consecutivo, emisor, requestData);
 
     clave = extractClaveFromJsonResponse(clave);
 
@@ -591,17 +571,7 @@ public class RecepcionController {
     String fechaEmision = invoiceProcessingUtil.generateCurrentEmissionDate();
 
     // Generar clave para mensaje receptor
-    String clave = _sender.getClave(
-        documentTypeUtil.tipoDocumento(tipoDocumento),
-        emisor.getTipoDeIdentificacion().getId().toString(),
-        emisor.getIdentificacion(),
-        "1", // situación normal para MR
-        "506",
-        consecutivo.toString(),
-        "00000001",
-        xmlValidationUtil.str_pad(requestData.path("sucursal").asText(), 3, "0", "STR_PAD_LEFT"),
-        xmlValidationUtil.str_pad(requestData.path("terminal").asText(), 5, "0", "STR_PAD_LEFT")
-    );
+    String clave = invoiceProcessingUtil.generateClave(tipoDocumento, consecutivo, emisor, requestData);
 
     clave = extractClaveFromJsonResponse(clave);
 

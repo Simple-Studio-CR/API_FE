@@ -1,6 +1,7 @@
 package app.simplestudio.com.util;
 
 import app.simplestudio.com.mh.CCampoFactura;
+import app.simplestudio.com.mh.Sender;
 import app.simplestudio.com.models.entity.CTerminal;
 import app.simplestudio.com.models.entity.ComprobantesElectronicos;
 import app.simplestudio.com.models.entity.Emisor;
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import java.util.Random;
 
 @Component
 public class InvoiceProcessingUtil {
@@ -21,6 +23,18 @@ public class InvoiceProcessingUtil {
     
     @Autowired
     private EnvironmentConfigUtil environmentConfigUtil;
+
+    @Autowired
+    private Sender _sender;
+
+    @Autowired
+    private DocumentTypeUtil documentTypeUtil;
+
+    @Autowired
+    private InvoiceProcessingUtil invoiceProcessingUtil;
+
+    @Autowired
+    private XmlValidationUtil xmlValidationUtil;
     
     /**
      * Resultado del procesamiento de factura
@@ -159,7 +173,40 @@ public class InvoiceProcessingUtil {
         
         return Math.max(consecutivoExistente, consecutivoTerminal);
     }
-    
+
+    /**
+     * Genera código de seguridad aleatorio de 8 dígitos con mejor distribución
+     */
+    public String generateRandomSecurityCode() {
+        Random random = new Random();
+        StringBuilder code = new StringBuilder();
+
+        // Generar 8 dígitos aleatorios
+        for (int i = 0; i < 8; i++) {
+            code.append(random.nextInt(10)); // 0-9
+        }
+
+        return code.toString();
+    }
+
+    /**
+     * Generamos la clave
+     */
+
+    public String generateClave(String tipoDocumento, Long consecutivo, Emisor emisor, JsonNode requestData) {
+        return _sender.getClave(
+            documentTypeUtil.getCodigoNumerico(tipoDocumento),
+            emisor.getTipoDeIdentificacion().getId().toString(),
+            emisor.getIdentificacion(),
+            documentTypeUtil.getCodigoSituacion(requestData.path("situacion").asText()),
+            "506",
+            consecutivo.toString(),
+            invoiceProcessingUtil.generateRandomSecurityCode(),  // <- ALEATORIO (CORRECTO)
+            xmlValidationUtil.str_pad(requestData.path("sucursal").asText(), 3, "0", "STR_PAD_LEFT"),
+            xmlValidationUtil.str_pad(requestData.path("terminal").asText(), 5, "0", "STR_PAD_LEFT")
+        );
+    }
+
     /**
      * Obtiene el consecutivo del terminal según el tipo de documento
      */
