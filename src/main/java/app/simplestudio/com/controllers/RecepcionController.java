@@ -523,10 +523,10 @@ public class RecepcionController {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  /**
-   * Genera XML, firma y guarda el documento
-   */
 
+  /**
+   * Genera XML, firma y guarda el documento - VERSIÓN CORREGIDA S3-ONLY
+   */
   private ResponseEntity<?> processDocumentGeneration(CCampoFactura campoFactura, Emisor emisor,
       String tipoDocumento, Long consecutivo) throws Exception {
 
@@ -542,51 +542,33 @@ public class RecepcionController {
     s3FileService.uploadFile(xmlS3Key, xmlContent, "application/xml");
     log.info("XML original guardado en S3: {}", xmlS3Key);
 
-    // 2. DESCARGAR XML DE S3 A ARCHIVO TEMPORAL PARA FIRMA
-    String tempDir = System.getProperty("java.io.tmpdir");
-    String tempXmlPath = tempDir + "/" + xmlFileName + ".xml";
-    String tempSignedXmlPath = tempDir + "/" + xmlSignedFileName + ".xml";
+    // 2. DEFINIR RUTA S3 PARA XML FIRMADO
+    String signedXmlS3Key = "XmlClientes/" + emisor.getIdentificacion() + "/" + xmlSignedFileName + ".xml";
 
-    try (InputStream xmlInputStream = s3FileService.downloadFile(xmlS3Key)) {
-      if (xmlInputStream == null) {
-        throw new RuntimeException("No se pudo descargar el XML de S3 para firma");
-      }
-
-      // Guardar temporalmente para firma
-      Files.copy(xmlInputStream, Paths.get(tempXmlPath), StandardCopyOption.REPLACE_EXISTING);
-      log.debug("XML descargado temporalmente para firma: {}", tempXmlPath);
-
-      // 3. FIRMAR XML
+    try {
+      // 3. FIRMAR XML DIRECTAMENTE DESDE/HACIA S3 (SIN ARCHIVOS TEMPORALES)
       String certificatePath = invoiceProcessingUtil.buildCertificatePath(
           pathUploadFilesApi, emisor.getIdentificacion(), emisor.getCertificado()
       );
 
-      _signer.sign(certificatePath, emisor.getPingApi(), tempXmlPath, tempSignedXmlPath);
-      log.info("XML firmado exitosamente: {}", tempSignedXmlPath);
+      // ¡ESTE ES EL CAMBIO CLAVE!
+      // ANTES: _signer.sign(certificatePath, emisor.getPingApi(), tempXmlPath, tempSignedXmlPath);
+      // AHORA: Usar rutas S3 directamente
+      _signer.sign(certificatePath, emisor.getPingApi(), xmlS3Key, signedXmlS3Key);
+      log.info("XML firmado exitosamente en S3: {}", signedXmlS3Key);
 
-      // 4. SUBIR XML FIRMADO A S3
-      String signedXmlContent = Files.readString(Paths.get(tempSignedXmlPath), StandardCharsets.UTF_8);
-      String signedXmlS3Key = "XmlClientes/" + emisor.getIdentificacion() + "/" + xmlSignedFileName + ".xml";
-      s3FileService.uploadFile(signedXmlS3Key, signedXmlContent, "application/xml");
-      log.info("XML firmado guardado en S3: {}", signedXmlS3Key);
-
-      // 5. CREAR REGISTRO EN BD
+      // 4. CREAR REGISTRO EN BD
       ComprobantesElectronicos ce = entityMapperUtil.createComprobantesElectronicos(
           campoFactura, emisor, tipoDocumento, consecutivo, xmlSignedFileName
       );
       _comprobantesElectronicosService.save(ce);
 
-      // 6. LIMPIAR ARCHIVOS TEMPORALES
-      Files.deleteIfExists(Paths.get(tempXmlPath));
-      Files.deleteIfExists(Paths.get(tempSignedXmlPath));
-      log.debug("Archivos temporales limpiados");
-
-      // 7. LOG DE ÉXITO
+      // 5. LOG DE ÉXITO
       invoiceProcessingUtil.logProcessingDetails(new InvoiceProcessingUtil.InvoiceProcessingParams(
           null, emisor, tipoDocumento, pathUploadFilesApi
       ));
 
-      // 8. CONSTRUIR RESPUESTA DE ÉXITO
+      // 6. CONSTRUIR RESPUESTA DE ÉXITO
       Map<String, Object> response = invoiceProcessingUtil.buildSuccessResponse(
           campoFactura.getClave(), "Documento procesado exitosamente"
       );
@@ -599,14 +581,6 @@ public class RecepcionController {
       return new ResponseEntity<>(response, HttpStatus.OK);
 
     } catch (Exception e) {
-      // Limpiar archivos temporales en caso de error
-      try {
-        Files.deleteIfExists(Paths.get(tempXmlPath));
-        Files.deleteIfExists(Paths.get(tempSignedXmlPath));
-      } catch (Exception cleanupEx) {
-        log.warn("Error limpiando archivos temporales: {}", cleanupEx.getMessage());
-      }
-
       log.error("Error en processDocumentGeneration: {}", e.getMessage(), e);
       throw e;
     }
