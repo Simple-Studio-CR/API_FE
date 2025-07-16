@@ -143,46 +143,4 @@ public class DescargaXmlController {
     }
   }
 
-  // ==================== MÉTODOS DE UTILIDAD ADICIONALES ====================
-
-  /**
-   * Verifica el estado del sistema de descarga
-   */
-  public Map<String, Object> checkDownloadSystemHealth() {
-    return downloadXmlUtil.validateSystemConfiguration();
-  }
-
-  /**
-   * Obtiene información del sistema de descarga (útil para debugging)
-   */
-  public Map<String, Object> getDownloadSystemInfo() {
-    Map<String, Object> info = downloadXmlUtil.getDownloadSystemInfo();
-
-    // Agregar información específica del controller
-    info.put("controllerClass", this.getClass().getSimpleName());
-    info.put("basePathConfigured", pathUploadFilesApi != null && !pathUploadFilesApi.trim().isEmpty());
-    info.put("basePathExists", fileManagerUtil.directoryExists(pathUploadFilesApi));
-
-    return info;
-  }
-
-  /**
-   * Endpoint de diagnóstico (útil para debugging en desarrollo)
-   * NOTA: Este método debería estar protegido o deshabilitado en producción
-   */
-  public ResponseEntity<?> diagnosticInfo() {
-    Map<String, Object> diagnostics = new HashMap<>();
-
-    // Información del sistema
-    diagnostics.put("systemHealth", checkDownloadSystemHealth());
-    diagnostics.put("systemInfo", getDownloadSystemInfo());
-
-    // Información de configuración (sin datos sensibles)
-    diagnostics.put("configuration", Map.of(
-        "basePathLength", pathUploadFilesApi != null ? pathUploadFilesApi.length() : 0,
-        "basePathPattern", pathUploadFilesApi != null ? pathUploadFilesApi.replaceAll("[^/\\\\]", "*") : "null"
-    ));
-
-    return ResponseEntity.ok(diagnostics);
-  }
 }

@@ -99,21 +99,14 @@ public class JsonProcessorUtil {
      * Obtiene la ruta XPath root según el tipo de documento
      */
     private String getRootPathForDocument(String tipoDocumento) {
-        switch (tipoDocumento) {
-            case "FE":
-                return "/FacturaElectronica";
-            case "ND":
-                return "/NotaDebitoElectronica";
-            case "NC":
-                return "/NotaCreditoElectronica";
-            case "TE":
-                return "/TiqueteElectronico";
-            case "FEC":
-                return "/FacturaElectronicaCompra";
-            case "FEE":
-                return "/FacturaElectronicaExportacion";
-            default:
-                return "/FacturaElectronica";
-        }
+      return switch (tipoDocumento) {
+        case "FE" -> "/FacturaElectronica";
+        case "ND" -> "/NotaDebitoElectronica";
+        case "NC" -> "/NotaCreditoElectronica";
+        case "TE" -> "/TiqueteElectronico";
+        case "FEC" -> "/FacturaElectronicaCompra";
+        case "FEE" -> "/FacturaElectronicaExportacion";
+        default -> "/FacturaElectronica";
+      };
     }
 }

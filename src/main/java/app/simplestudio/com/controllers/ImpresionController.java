@@ -5,19 +5,15 @@ import app.simplestudio.com.models.entity.Emisor;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
 import app.simplestudio.com.util.DocumentTypeUtil;
-import app.simplestudio.com.util.FileManagerUtil;
 import app.simplestudio.com.util.PrintDocumentUtil;
 import app.simplestudio.com.util.ReportGeneratorUtil;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.util.HashMap;
 import net.sf.jasperreports.engine.JRException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,8 +33,6 @@ public class ImpresionController {
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   // ==================== SERVICIOS ORIGINALES ====================
-  @Autowired
-  public JavaMailSender emailSender;
 
   @Autowired
   public DataSource dataSource;
@@ -58,16 +52,6 @@ public class ImpresionController {
 
   @Autowired
   private PrintDocumentUtil printDocumentUtil;
-
-  @Autowired
-  private FileManagerUtil fileManagerUtil;
-
-  // ==================== CONFIGURACIÓN ORIGINAL ====================
-  @Value("${path.upload.files.api}")
-  private String pathUploadFilesApi;
-
-  @Value("${url.qr}")
-  private String urlQr;
 
   // ==================== ENDPOINT ORIGINAL MANTENIDO ====================
 
@@ -270,26 +254,4 @@ public class ImpresionController {
     }
   }
 
-  // ==================== MÉTODOS DE UTILIDAD ADICIONALES ====================
-
-  /**
-   * Verifica el estado del sistema de impresión
-   */
-  public Map<String, Object> checkPrintSystemHealth() {
-    return printDocumentUtil.validateSystemConfiguration();
-  }
-
-  /**
-   * Obtiene estadísticas básicas de impresión (útil para debugging)
-   */
-  public Map<String, Object> getPrintSystemInfo() {
-    Map<String, Object> info = new HashMap<>();  // ✅ Cambio: HashMap en lugar de Map
-
-    info.put("pathUploadFiles", pathUploadFilesApi);
-    info.put("urlQr", urlQr != null ? "Configurado" : "No configurado");
-    info.put("jasperTemplate", getClass().getResourceAsStream("/facturas.jasper") != null ? "Encontrado" : "No encontrado");
-    info.put("logoDirectory", fileManagerUtil.directoryExists(pathUploadFilesApi + "logo/") ? "Existe" : "No existe");
-
-    return info;
-  }
 }

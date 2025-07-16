@@ -257,8 +257,6 @@ public class RecepcionController {
    * Procesa factura estándar (FE, ND, NC, TE, FEE)
    */
   private ResponseEntity<?> processFacturaEstandar(JsonNode requestData, Emisor emisor, String tipoDocumento) throws Exception {
-    // Configurar ambiente
-    EnvironmentConfigUtil.EnvironmentConfig envConfig = invoiceProcessingUtil.configureEnvironment(emisor);
 
     // Validar terminal
     CTerminal terminal = _emisorService.findBySecuenciaByTerminal(
@@ -324,16 +322,13 @@ public class RecepcionController {
     entityMapperUtil.mapJsonToReceptor(campoFactura, requestData);
 
     // Procesar documento
-    return processDocumentGeneration(campoFactura, emisor, tipoDocumento, consecutivo, envConfig);
+    return processDocumentGeneration(campoFactura, emisor, tipoDocumento, consecutivo);
   }
 
   /**
    * Procesa factura de compra (FEC) - lógica especial donde emisor/receptor están invertidos
    */
   private ResponseEntity<?> processFacturaCompra(JsonNode requestData, Emisor emisor) throws Exception {
-    // Configurar ambiente
-    EnvironmentConfigUtil.EnvironmentConfig envConfig = invoiceProcessingUtil.configureEnvironment(emisor);
-
     // Validar terminal
     CTerminal terminal = _emisorService.findBySecuenciaByTerminal(
         emisor.getId(),
@@ -384,7 +379,7 @@ public class RecepcionController {
     entityMapperUtil.mapJsonToEmisorAsReceptor(campoFactura, requestData, emisor);
 
     // Procesar documento
-    return processDocumentGeneration(campoFactura, emisor, "FEC", consecutivo, envConfig);
+    return processDocumentGeneration(campoFactura, emisor, "FEC", consecutivo);
   }
 
   /**
@@ -553,8 +548,7 @@ public class RecepcionController {
    * Genera XML, firma y guarda el documento
    */
   private ResponseEntity<?> processDocumentGeneration(CCampoFactura campoFactura, Emisor emisor,
-      String tipoDocumento, Long consecutivo,
-      EnvironmentConfigUtil.EnvironmentConfig envConfig) throws Exception {
+      String tipoDocumento, Long consecutivo) throws Exception {
 
     // Generar XML
     String xmlContent = _generaXml.GeneraXml(campoFactura);
@@ -600,9 +594,6 @@ public class RecepcionController {
    * Procesa mensaje receptor específico
    */
   private ResponseEntity<?> processSpecificMessageReceptor(JsonNode requestData, Emisor emisor, String tipoDocumento, Long consecutivo) throws Exception {
-    // Configurar ambiente
-    EnvironmentConfigUtil.EnvironmentConfig envConfig = invoiceProcessingUtil.configureEnvironment(emisor);
-
     // Crear estructura para mensaje receptor
     String fechaEmision = invoiceProcessingUtil.generateCurrentEmissionDate();
 

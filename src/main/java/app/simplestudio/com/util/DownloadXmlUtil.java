@@ -470,18 +470,4 @@ public class DownloadXmlUtil {
 
         return result;
     }
-
-    /**
-     * Obtiene estadísticas del sistema de descarga
-     */
-    public Map<String, Object> getDownloadSystemInfo() {
-        Map<String, Object> info = new HashMap<>();
-        
-        info.put("baseDirectory", pathUploadFilesApi);
-        info.put("maxFileSize", MAX_FILE_SIZE);
-        info.put("allowedExtensions", String.join(", ", ALLOWED_EXTENSIONS));
-        info.put("securityValidation", "Enabled");
-        
-        return info;
-    }
 }

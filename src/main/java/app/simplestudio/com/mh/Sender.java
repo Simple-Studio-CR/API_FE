@@ -189,36 +189,6 @@ public class Sender {
     return responseString;
   }
 
-  /**
-   * FIRMA ORIGINAL MANTENIDA - SendDocumentMH
-   */
-  public String SendDocumentMH(String xml, String username, String password, String _urlToken, String _clientId, String _endpoint, String emisorToken, String tokenSender) throws Exception {
-    // Generar JSON desde XML
-    String json = convertXmlToJsonForSending(xml);
-
-    // Obtener token válido
-    String token = getToken(username, password, _urlToken, _clientId, emisorToken);
-
-    // Enviar documento
-    try (CloseableHttpResponse response = httpClientUtil.executePostWithBearer(_endpoint, json, token)) {
-      return httpClientUtil.extractResponseContent(response);
-    }
-  }
-
-  /**
-   * FIRMA ORIGINAL MANTENIDA - ConsultarDocumentMH
-   */
-  public String ConsultarDocumentMH(String clave, String username, String password, String _urlToken, String _clientId, String _endpoint, String emisorToken, String tokenSender) throws Exception {
-    // Obtener token válido
-    String token = getToken(username, password, _urlToken, _clientId, emisorToken);
-
-    // Consultar documento
-    String url = _endpoint + clave;
-    try (CloseableHttpResponse response = httpClientUtil.executeGetWithBearer(url, token)) {
-      return httpClientUtil.extractResponseContent(response);
-    }
-  }
-
   // ==================== MÉTODOS AUXILIARES ====================
 
   /**

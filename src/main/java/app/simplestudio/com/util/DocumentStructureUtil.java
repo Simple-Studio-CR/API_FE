@@ -151,24 +151,10 @@ public class DocumentStructureUtil {
     }
     
     /**
-     * Verifica si es una factura estándar (tipos 01, 07, 04)
-     */
-    public boolean isFacturaEstandar(String tipoDocumento) {
-        return "01".equals(tipoDocumento) || "07".equals(tipoDocumento) || "04".equals(tipoDocumento);
-    }
-    
-    /**
      * Verifica si es factura de exportación (tipo 09)
      */
     public boolean isFacturaExportacion(String tipoDocumento) {
         return "09".equals(tipoDocumento);
-    }
-    
-    /**
-     * Verifica si es factura de compra (tipo 08)
-     */
-    public boolean isFacturaCompra(String tipoDocumento) {
-        return "08".equals(tipoDocumento);
     }
     
     /**
@@ -204,19 +190,5 @@ public class DocumentStructureUtil {
              .append("</Otros>");
         
         return otros.toString();
-    }
-    
-    /**
-     * Valida si el tipo de documento es válido
-     */
-    public boolean isValidDocumentType(String tipoDocumento) {
-        return documentConfigs.containsKey(tipoDocumento);
-    }
-    
-    /**
-     * Obtiene todos los tipos de documentos soportados
-     */
-    public String[] getSupportedDocumentTypes() {
-        return documentConfigs.keySet().toArray(new String[0]);
     }
 }

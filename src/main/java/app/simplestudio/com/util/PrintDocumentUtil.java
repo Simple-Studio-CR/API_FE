@@ -291,18 +291,6 @@ public class PrintDocumentUtil {
     public void logValidationError(String clave, String validationError) {
         log.warn("Validación fallida para impresión - Clave: {}, Error: {}", clave, validationError);
     }
-
-    /**
-     * Registra información de recursos
-     */
-    public void logResourceInfo(String resourceType, String resourcePath, boolean exists) {
-        if (exists) {
-            log.debug("Recurso {} encontrado: {}", resourceType, resourcePath);
-        } else {
-            log.warn("Recurso {} no encontrado: {}", resourceType, resourcePath);
-        }
-    }
-
     // ==================== UTILIDADES AUXILIARES ====================
 
     /**
@@ -314,26 +302,16 @@ public class PrintDocumentUtil {
     }
 
     /**
-     * Valida el formato de la clave numérica
-     */
-    public boolean isValidClaveFormat(String clave) {
-        return clave != null && clave.length() == 50 && clave.matches("\\d+");
-    }
-
-    /**
      * Construye información resumida del documento para logging
      */
     public String buildDocumentSummary(ComprobantesElectronicos ce, Emisor emisor) {
         if (ce == null) return "Documento: null";
-        
-        StringBuilder summary = new StringBuilder();
-        summary.append("Documento[");
-        summary.append("Clave: ").append(ce.getClave() != null ? ce.getClave().substring(0, 10) + "..." : "null");
-        summary.append(", Tipo: ").append(getDocumentTypeForLogging(ce.getTipoDocumento()));
-        summary.append(", Emisor: ").append(emisor != null ? emisor.getIdentificacion() : "null");
-        summary.append("]");
-        
-        return summary.toString();
+
+      return "Documento["
+          + "Clave: " + (ce.getClave() != null ? ce.getClave().substring(0, 10) + "..." : "null")
+          + ", Tipo: " + getDocumentTypeForLogging(ce.getTipoDocumento())
+          + ", Emisor: " + (emisor != null ? emisor.getIdentificacion() : "null")
+          + "]";
     }
 
     /**
@@ -356,10 +334,10 @@ public class PrintDocumentUtil {
         // Verificar directorio de logos
         String logoDir = pathUploadFilesApi + "logo/";
         if (!fileManagerUtil.directoryExists(logoDir)) {
-            issues.append("Directorio de logos no existe: " + logoDir + "; ");
+            issues.append("Directorio de logos no existe: ").append(logoDir).append("; ");
         }
 
-        if (issues.length() > 0) {
+        if (!issues.isEmpty()) {
             result.put("valid", false);
             result.put("issues", issues.toString());
             log.warn("Problemas de configuración del sistema: {}", issues);

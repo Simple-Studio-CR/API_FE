@@ -33,22 +33,6 @@ public class FileManagerUtil {
     }
     
     /**
-     * Convierte archivo a Base64
-     */
-    public String fileToBase64(String filePath) throws Exception {
-        byte[] fileBytes = FileUtils.readFileToByteArray(new File(filePath));
-        return Base64.encodeBase64String(fileBytes);
-    }
-    
-    /**
-     * Convierte Base64 a archivo
-     */
-    public void base64ToFile(String base64Content, String filePath) throws Exception {
-        byte[] decodedBytes = Base64.decodeBase64(base64Content);
-        FileUtils.writeByteArrayToFile(new File(filePath), decodedBytes);
-    }
-    
-    /**
      * Verifica si el archivo existe
      */
     public boolean fileExists(String filePath) {
@@ -87,24 +71,5 @@ public class FileManagerUtil {
             log.error("Error verificando existencia del directorio [{}]: {}", directoryPath, e.getMessage());
             return false;
         }
-    }
-    
-    /**
-     * Elimina archivo
-     */
-    public boolean deleteFile(String filePath) {
-        File file = new File(filePath);
-        if (file.exists()) {
-            return file.delete();
-        }
-        return false;
-    }
-    
-    /**
-     * Obtiene el tamaño del archivo en bytes
-     */
-    public long getFileSize(String filePath) {
-        File file = new File(filePath);
-        return file.exists() ? file.length() : 0;
     }
 }

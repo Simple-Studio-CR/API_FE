@@ -294,16 +294,4 @@ public class EntityMapperUtil {
         
         return ce;
     }
-    
-    /**
-     * Log de mapeo para debugging
-     */
-    public void logMappingDetails(CCampoFactura c) {
-        log.debug("=== MAPEO COMPLETADO ===");
-        log.debug("Clave: {}", c.getClave());
-        log.debug("Emisor: {}", c.getEmisorNombre());
-        log.debug("Receptor: {}", c.getReceptorNombre());
-        log.debug("Total: {}", c.getTotalComprobante());
-        log.debug("=========================");
-    }
 }

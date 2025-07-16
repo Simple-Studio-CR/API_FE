@@ -231,89 +231,11 @@ public class DigitalSignatureUtil {
     }
     
     /**
-     * Convierte documento firmado a String (útil para debugging)
-     */
-    public String getSignedDocumentAsString(Document signedDocument) throws Exception {
-        try {
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            
-            StringWriter writer = new StringWriter();
-            transformer.transform(new DOMSource(signedDocument), new StreamResult(writer));
-            
-            return writer.toString();
-            
-        } catch (Exception e) {
-            log.error("Error convirtiendo documento a String: {}", e.getMessage());
-            throw new Exception("No se pudo convertir el documento firmado", e);
-        }
-    }
-    
-    /**
-     * Verifica si un XML está firmado digitalmente
-     */
-    public boolean isXmlSigned(String xmlPath) {
-        try {
-            String xmlContent = fileManagerUtil.readFromFile(xmlPath);
-            return xmlContent.contains("<ds:Signature") || xmlContent.contains("<Signature");
-            
-        } catch (Exception e) {
-            log.error("Error verificando si XML está firmado: {}", e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Obtiene información de la firma de un XML
-     */
-    public String getSignatureInfo(String xmlPath) {
-        try {
-            String xmlContent = fileManagerUtil.readFromFile(xmlPath);
-            
-            if (isXmlSigned(xmlPath)) {
-                // Extraer información básica de la firma
-                if (xmlContent.contains("SigningTime")) {
-                    int start = xmlContent.indexOf("<xades:SigningTime>") + 19;
-                    int end = xmlContent.indexOf("</xades:SigningTime>");
-                    if (start > 18 && end > start) {
-                        return "Firmado el: " + xmlContent.substring(start, end);
-                    }
-                }
-                return "Documento firmado digitalmente";
-            } else {
-                return "Documento no firmado";
-            }
-            
-        } catch (Exception e) {
-            log.error("Error obteniendo información de firma: {}", e.getMessage());
-            return "Error verificando firma";
-        }
-    }
-    
-    /**
      * Crea parámetros de firma con configuración por defecto
      */
     public SignatureParameters createDefaultSignatureParameters(String keyStorePath, String password, 
                                                                String xmlInputPath, String xmlOutputPath) {
         return new SignatureParameters(keyStorePath, password, xmlInputPath, xmlOutputPath);
     }
-    
-    /**
-     * Log detallado del proceso de firma para debugging
-     */
-    public void logSignatureDetails(SignatureParameters params, SignatureResult result) {
-        log.info("=== RESULTADO DE FIRMA DIGITAL ===");
-        log.info("XML Entrada: {}", params.getXmlInputPath());
-        log.info("XML Salida: {}", params.getXmlOutputPath());
-        log.info("Certificado: {}", params.getKeyStorePath());
-        log.info("Éxito: {}", result.isSuccess());
-        log.info("Mensaje: {}", result.getMessage());
-        log.info("Tiempo: {} ms", result.getExecutionTimeMs());
-        
-        if (!result.isSuccess() && result.getException() != null) {
-            log.error("Excepción: ", result.getException());
-        }
-        log.info("===================================");
-    }
+
 }

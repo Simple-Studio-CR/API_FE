@@ -51,16 +51,4 @@ public class XmlParserUtil {
         NodeList nodes = extractNodes(xml, xpathExpression);
         return nodes != null && nodes.getLength() > 0 && !nodes.item(0).getTextContent().trim().isEmpty();
     }
-    
-    /**
-     * Extrae valor de nodo con valor por defecto si no existe
-     */
-    public String extractNodeValueOrDefault(Document xml, String xpathExpression, String defaultValue) {
-        try {
-            String value = extractNodeValue(xml, xpathExpression);
-            return value.isEmpty() ? defaultValue : value;
-        } catch (Exception e) {
-            return defaultValue;
-        }
-    }
 }

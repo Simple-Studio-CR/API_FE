@@ -7,6 +7,11 @@ import lombok.Setter;
 @Getter
 public class CCampoFactura {
   public String codigoActividad;
+  public String tipoDocumento;
+  public String situacion;
+  public String terminal;
+  public String sucursal;
+  public String identificacion;
   
   public String receptorIdentificacionExtranjero;
   

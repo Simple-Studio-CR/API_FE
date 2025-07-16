@@ -299,24 +299,6 @@ public class ResendDocumentUtil {
     // ==================== MÉTODOS DE MAPEO ====================
 
     /**
-     * Mapea parámetros para JasperReports
-     */
-    public Map<String, Object> buildJasperParameters(String clave, String logo, String baseUrl, String urlQr) {
-        Map<String, Object> params = new HashMap<>();
-        
-        params.put("clave", clave);
-        params.put("logo", logo);
-        params.put("SUBREPORT_DIR", baseUrl);
-        
-        if (urlQr != null && !urlQr.isEmpty()) {
-            params.put("urlQr", urlQr + clave);
-        }
-        
-        log.debug("Parámetros JasperReports construidos para clave: {}", clave);
-        return params;
-    }
-
-    /**
      * Información del tipo de documento (delegado a DocumentTypeUtil)
      */
     public String getDocumentTypeDescription(String tipoDocumento) {

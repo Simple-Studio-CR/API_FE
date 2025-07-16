@@ -98,13 +98,6 @@ public class GeneraXmlImpl implements IGeneraXml {
   }
 
   /**
-   * FIRMA ORIGINAL MANTENIDA - Procesamiento de números
-   */
-  public String procesarNumeros(String j, String decimales) {
-    return xmlValidationUtil.procesarNumeros(j, decimales);
-  }
-
-  /**
    * FIRMA ORIGINAL MANTENIDA - Procesamiento de texto
    */
   public String procesarTexto(String j) {

@@ -50,13 +50,6 @@ public class XadesSignatureUtil {
         public String getPolicyUrl() { return policyUrl; }
         public String getPolicyDescription() { return policyDescription; }
         public boolean isUseCustomAlgorithms() { return useCustomAlgorithms; }
-        public String getSigningProfileType() { return signingProfileType; }
-
-        // Setters para personalización
-        public void setPolicyUrl(String policyUrl) { this.policyUrl = policyUrl; }
-        public void setPolicyDescription(String policyDescription) { this.policyDescription = policyDescription; }
-        public void setUseCustomAlgorithms(boolean useCustomAlgorithms) { this.useCustomAlgorithms = useCustomAlgorithms; }
-        public void setSigningProfileType(String signingProfileType) { this.signingProfileType = signingProfileType; }
     }
 
     /**
@@ -64,27 +57,24 @@ public class XadesSignatureUtil {
      * MANTIENE LA MISMA LÓGICA que el provider original anónimo
      */
     public SignaturePolicyInfoProvider createHaciendaPolicyProvider(XadesConfig config) {
-        return new SignaturePolicyInfoProvider() {
-            @Override
-            public SignaturePolicyBase getSignaturePolicy() {
-                try {
-                    ObjectIdentifier identifier = new ObjectIdentifier(config.getPolicyUrl());
-                    ByteArrayInputStream policyStream = new ByteArrayInputStream(
-                        config.getPolicyDescription().getBytes()
-                    );
+        return () -> {
+            try {
+                ObjectIdentifier identifier = new ObjectIdentifier(config.getPolicyUrl());
+                ByteArrayInputStream policyStream = new ByteArrayInputStream(
+                    config.getPolicyDescription().getBytes()
+                );
 
-                    SignaturePolicyIdentifierProperty policy = new SignaturePolicyIdentifierProperty(
-                        identifier,
-                        policyStream
-                    );
+                SignaturePolicyIdentifierProperty policy = new SignaturePolicyIdentifierProperty(
+                    identifier,
+                    policyStream
+                );
 
-                    log.debug("Política de firma creada: {}", config.getPolicyUrl());
-                    return policy;
+                log.debug("Política de firma creada: {}", config.getPolicyUrl());
+                return policy;
 
-                } catch (Exception e) {
-                    log.error("Error creando política de firma: {}", e.getMessage());
-                    throw new RuntimeException("No se pudo crear la política de firma", e);
-                }
+            } catch (Exception e) {
+                log.error("Error creando política de firma: {}", e.getMessage());
+                throw new RuntimeException("No se pudo crear la política de firma", e);
             }
         };
     }
@@ -139,20 +129,6 @@ public class XadesSignatureUtil {
     }
 
     /**
-     * Crea configuración por defecto para Hacienda Costa Rica
-     */
-    public XadesConfig createDefaultHaciendaConfig() {
-        return new XadesConfig();
-    }
-
-    /**
-     * Crea configuración personalizada
-     */
-    public XadesConfig createCustomConfig(String policyUrl, String policyDescription) {
-        return new XadesConfig(policyUrl, policyDescription, true, "EPES");
-    }
-
-    /**
      * Valida la configuración XAdES
      */
     public boolean validateXadesConfig(XadesConfig config) {
@@ -183,38 +159,4 @@ public class XadesSignatureUtil {
         }
     }
 
-    /**
-     * Obtiene información de la configuración para logging
-     */
-    public void logXadesConfigDetails(XadesConfig config) {
-        log.info("=== CONFIGURACIÓN XADES ===");
-        log.info("URL Política: {}", config.getPolicyUrl());
-        log.info("Descripción: {}", config.getPolicyDescription());
-        log.info("Algoritmos Custom: {}", config.isUseCustomAlgorithms());
-        log.info("Tipo Perfil: {}", config.getSigningProfileType());
-        log.info("Válida: {}", validateXadesConfig(config));
-        log.info("============================");
-    }
-
-    /**
-     * Verifica si la configuración es compatible con Hacienda v4.3
-     */
-    public boolean isHaciendaCompatible(XadesConfig config) {
-        return config != null &&
-            config.getPolicyUrl() != null &&
-            config.getPolicyUrl().contains("v4.3") &&
-            "EPES".equals(config.getSigningProfileType());
-    }
-
-    /**
-     * Crea configuración para testing (sin validación estricta)
-     */
-    public XadesConfig createTestConfig() {
-        return new XadesConfig(
-            "http://test.policy.url/test.pdf",
-            "Test Policy Description",
-            false,
-            "EPES"
-        );
-    }
 }

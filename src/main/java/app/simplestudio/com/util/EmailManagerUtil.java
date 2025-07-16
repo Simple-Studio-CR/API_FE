@@ -187,11 +187,4 @@ public class EmailManagerUtil {
     public boolean isValidEmail(String email) {
         return email != null && !email.trim().isEmpty() && email.contains("@");
     }
-    
-    /**
-     * Sanitiza email removiendo espacios
-     */
-    public String sanitizeEmail(String email) {
-        return email != null ? email.trim() : "";
-    }
 }

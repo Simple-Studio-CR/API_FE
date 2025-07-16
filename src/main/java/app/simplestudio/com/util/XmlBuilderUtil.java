@@ -85,36 +85,7 @@ public class XmlBuilderUtil {
         }
         return this;
     }
-    
-    /**
-     * Agrega elemento con atributos
-     */
-    public XmlBuilderUtil addElementWithAttributes(String tagName, String value, Map<String, String> attributes) {
-        xml.append("<").append(tagName);
-        
-        if (attributes != null) {
-            for (Map.Entry<String, String> attr : attributes.entrySet()) {
-                xml.append(" ").append(attr.getKey()).append("=\"").append(attr.getValue()).append("\"");
-            }
-        }
-        
-        xml.append(">").append(value).append("</").append(tagName).append(">");
-        return this;
-    }
-    
-    /**
-     * Agrega múltiples elementos del mismo tipo
-     */
-    public XmlBuilderUtil addRepeatingElements(String tagName, String... values) {
-        if (values != null) {
-            for (String value : values) {
-                if (value != null && !value.trim().isEmpty()) {
-                    addElement(tagName, value);
-                }
-            }
-        }
-        return this;
-    }
+
     
     /**
      * Construye bloque de identificación estándar
@@ -174,16 +145,6 @@ public class XmlBuilderUtil {
      */
     public int length() {
         return xml != null ? xml.length() : 0;
-    }
-    
-    /**
-     * Limpia el builder para reutilización
-     */
-    public XmlBuilderUtil clear() {
-        if (xml != null) {
-            xml.setLength(0);
-        }
-        return this;
     }
     
     /**

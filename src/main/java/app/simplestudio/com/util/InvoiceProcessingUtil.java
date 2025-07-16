@@ -20,13 +20,7 @@ public class InvoiceProcessingUtil {
     private static final Logger log = LoggerFactory.getLogger(InvoiceProcessingUtil.class);
     
     @Autowired
-    private DocumentTypeUtil documentTypeUtil;
-    
-    @Autowired
     private EnvironmentConfigUtil environmentConfigUtil;
-    
-    @Autowired
-    private XmlValidationUtil xmlValidationUtil;
     
     /**
      * Resultado del procesamiento de factura
@@ -192,14 +186,6 @@ public class InvoiceProcessingUtil {
     public String buildCertificatePath(String pathUploadFiles, String identificacion, String certificado) {
         return pathUploadFiles + "/" + identificacion + "/cert/" + certificado;
     }
-    
-    /**
-     * Construye la ruta del XML
-     */
-    public String buildXmlPath(String pathUploadFiles, String identificacion, String nombreArchivo) {
-        return pathUploadFiles + identificacion + "/" + nombreArchivo + ".xml";
-    }
-    
     /**
      * Valida si el emisor tiene configuración completa
      */
@@ -281,22 +267,6 @@ public class InvoiceProcessingUtil {
         }
         
         return validation;
-    }
-    
-    /**
-     * Procesa texto para evitar caracteres especiales
-     */
-    public String processText(String input) {
-        return xmlValidationUtil.procesarTexto(input);
-    }
-    
-    /**
-     * Valida formato de número de factura
-     */
-    public boolean isValidInvoiceNumber(String numeroFactura) {
-        return numeroFactura != null && 
-               !numeroFactura.trim().isEmpty() && 
-               numeroFactura.length() == 50;
     }
     
     /**

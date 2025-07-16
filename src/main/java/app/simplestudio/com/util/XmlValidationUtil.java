@@ -36,9 +36,9 @@ public class XmlValidationUtil {
         
         // Aplicar padding según el tipo
         if ("STR_PAD_LEFT".equals(padType)) {
-            return padding.toString() + input;
+            return padding + input;
         } else {
-            return input + padding.toString();
+            return input + padding;
         }
     }
     
@@ -149,13 +149,6 @@ public class XmlValidationUtil {
     }
     
     /**
-     * Valida si un string no es nulo ni vacío y no es "0"
-     */
-    public boolean isValidValue(String value) {
-        return isNotEmpty(value) && !"0".equals(value.trim());
-    }
-    
-    /**
      * Valida si un double es mayor a 0
      */
     public boolean isPositiveAmount(String amount) {
@@ -164,13 +157,6 @@ public class XmlValidationUtil {
         } catch (NumberFormatException e) {
             return false;
         }
-    }
-    
-    /**
-     * Valida formato de email básico
-     */
-    public boolean isValidEmail(String email) {
-        return isNotEmpty(email) && email.contains("@");
     }
     
     /**
@@ -185,13 +171,6 @@ public class XmlValidationUtil {
      */
     public boolean requiresExoneracion(String tipoDocumento) {
         return !"09".equals(tipoDocumento);
-    }
-    
-    /**
-     * Valida si el tipo de documento requiere campos de exportación
-     */
-    public boolean isFacturaExportacion(String tipoDocumento) {
-        return "09".equals(tipoDocumento);
     }
     
     /**
@@ -214,11 +193,5 @@ public class XmlValidationUtil {
     public String formatearMonto(String monto) {
         return procesarNumeros(monto, "#0.00");
     }
-    
-    /**
-     * Formatea porcentajes con 2 decimales
-     */
-    public String formatearPorcentaje(String porcentaje) {
-        return procesarNumeros(porcentaje, "#0.00");
-    }
+
 }

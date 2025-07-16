@@ -57,13 +57,5 @@ public class FuncionesService {
     } 
     return padded;
   }
-  
-  public String getCodigoSeguridad(int digitos) {
-    int DIGITS = digitos;
-    StringBuilder sb = new StringBuilder(DIGITS);
-    for (int i = 0; i < DIGITS; i++)
-      sb.append((char)(int)(Math.random() * 10.0D + 48.0D)); 
-    return sb.toString();
-  }
 }
 

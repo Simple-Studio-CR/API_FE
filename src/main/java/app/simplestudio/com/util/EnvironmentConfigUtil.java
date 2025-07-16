@@ -55,25 +55,4 @@ public class EnvironmentConfigUtil {
     public boolean isProduction(String ambiente) {
         return "prod".equals(ambiente);
     }
-    
-    /**
-     * Obtiene el endpoint según ambiente
-     */
-    public String getEndpoint(String ambiente) {
-        return isProduction(ambiente) ? endpointProd : endpointStag;
-    }
-    
-    /**
-     * Obtiene la URL del token según ambiente
-     */
-    public String getTokenUrl(String ambiente) {
-        return isProduction(ambiente) ? tokenProd : tokenStag;
-    }
-    
-    /**
-     * Obtiene el client ID según ambiente
-     */
-    public String getClientId(String ambiente) {
-        return isProduction(ambiente) ? "api-prod" : "api-stag";
-    }
 }
