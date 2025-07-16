@@ -184,7 +184,7 @@ public class InvoiceProcessingUtil {
      * Construye la ruta del certificado
      */
     public String buildCertificatePath(String pathUploadFiles, String identificacion, String certificado) {
-        return pathUploadFiles + "/" + identificacion + "/cert/" + certificado;
+        return pathUploadFiles + identificacion + "/cert/" + certificado;
     }
     /**
      * Valida si el emisor tiene configuración completa
