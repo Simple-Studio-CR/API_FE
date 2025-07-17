@@ -180,7 +180,7 @@ public class InvoiceProcessingUtil {
         StringBuilder code = new StringBuilder();
 
         // Generar 8 dígitos aleatorios
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 6; i++) {
             code.append(random.nextInt(10)); // 0-9
         }
 

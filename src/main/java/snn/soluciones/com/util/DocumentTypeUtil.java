@@ -101,7 +101,7 @@ public class DocumentTypeUtil {
         if (clave == null || clave.length() < 41) {
             return "";
         }
-        return clave.substring(21, 41);
+        return clave.substring(25, 45);
     }
 
     /**
