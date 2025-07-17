@@ -246,7 +246,7 @@ public class GeneraXmlImpl implements IGeneraXml {
         }
 
         // Verificar que sea un array y tenga elementos
-        if (!detalleArray.isArray() || detalleArray.size() == 0) {
+        if (!detalleArray.isArray() || detalleArray.isEmpty()) {
           log.warn("detalleFactura no es un array o está vacío");
           agregarLineaDetalleBasica(doc, detalleServicio, campoFactura);
           return;
