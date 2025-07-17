@@ -21,9 +21,6 @@ public class CertificateManagerUtil {
 
     @Autowired
     private S3FileService s3FileService;
-
-    @Autowired
-    private DigitalSignatureUtil digitalSignatureUtill;
     
     /**
      * Configuración de certificado para firma
