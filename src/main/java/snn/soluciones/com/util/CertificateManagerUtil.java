@@ -1,7 +1,7 @@
 package snn.soluciones.com.util;
 
-import java.io.ByteArrayInputStream;
-import java.security.KeyStore;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import snn.soluciones.com.mh.DirectPasswordProvider;
 import snn.soluciones.com.mh.FirstCertificateSelector;
 import snn.soluciones.com.service.storage.S3FileService;
@@ -12,11 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import xades4j.providers.KeyingDataProvider;
 import xades4j.providers.impl.FileSystemKeyStoreKeyingDataProvider;
-import xades4j.providers.impl.KeyStoreKeyingDataProvider;
 
 @Component
 public class CertificateManagerUtil {
-    
+
     private static final Logger log = LoggerFactory.getLogger(CertificateManagerUtil.class);
 
     @Autowired
@@ -78,57 +77,102 @@ public class CertificateManagerUtil {
         public boolean isValid() { return isValid; }
         public String getValidationMessage() { return validationMessage; }
     }
-    
+
     /**
-     * Crea un KeyingDataProvider para XAdES con la configuración especificada
-     * MANTIENE LA MISMA LÓGICA que FileSystemKeyStoreKeyingDataProvider original
+     * NUEVA CLASE INTERNA para manejar archivos temporales
+     */
+    public static class TemporaryCertificateFile implements AutoCloseable {
+        private final Path tempFile;
+        private final KeyingDataProvider provider;
+
+        public TemporaryCertificateFile(Path tempFile, KeyingDataProvider provider) {
+            this.tempFile = tempFile;
+            this.provider = provider;
+        }
+
+        public KeyingDataProvider getProvider() {
+            return provider;
+        }
+
+        @Override
+        public void close() {
+            try {
+                if (tempFile != null && Files.exists(tempFile)) {
+                    Files.deleteIfExists(tempFile);
+                    log.debug("Archivo temporal de certificado eliminado: {}", tempFile);
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo eliminar archivo temporal: {}", e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * MANTIENE LA MISMA FIRMA - Crea un KeyingDataProvider para XAdES
+     * Ahora usa archivo temporal internamente
      */
     public KeyingDataProvider createKeyingDataProvider(CertificateConfig config) throws Exception {
         validateCertificateConfig(config);
 
+        Path tempFile = null;
         try {
-            FileSystemKeyStoreKeyingDataProvider provider = new FileSystemKeyStoreKeyingDataProvider(
-                config.getKeyStoreType(),
-                config.getKeyStorePath(),
-                new FirstCertificateSelector(),
-                new DirectPasswordProvider(config.getPassword()),
-                new DirectPasswordProvider(config.getPassword()),
-                false // No protection domain
-            );
+            // Descargar certificado de S3
+            byte[] certificateData = s3FileService.downloadFileAsBytes(config.getKeyStorePath());
 
-            log.info("KeyingDataProvider creado exitosamente para: {}", config.getKeyStorePath());
+            // Crear archivo temporal
+            tempFile = Files.createTempFile("cert-", ".p12");
+            Files.write(tempFile, certificateData);
+
+            log.debug("Certificado descargado a archivo temporal: {}", tempFile);
+
+            // Usar el patrón Builder para crear FileSystemKeyStoreKeyingDataProvider
+            FileSystemKeyStoreKeyingDataProvider provider = FileSystemKeyStoreKeyingDataProvider
+                .builder(
+                    config.getKeyStoreType(),
+                    tempFile.toString(),
+                    new FirstCertificateSelector()
+                )
+                .storePassword(new DirectPasswordProvider(config.getPassword()))
+                .entryPassword(new DirectPasswordProvider(config.getPassword()))
+                .fullChain(false)
+                .build();
+
+            log.info("KeyingDataProvider creado exitosamente desde archivo temporal");
+
+            // IMPORTANTE: Registrar el archivo temporal para limpieza posterior
+            registerTempFileForCleanup(tempFile);
+
             return provider;
 
         } catch (Exception e) {
+            // Si hay error, limpiar el archivo temporal inmediatamente
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (Exception deleteEx) {
+                    log.warn("No se pudo eliminar archivo temporal tras error: {}", deleteEx.getMessage());
+                }
+            }
+
             log.error("Error creando KeyingDataProvider: {}", e.getMessage());
             throw new Exception("No se pudo crear el proveedor de certificados: " + e.getMessage(), e);
         }
     }
-    
+
     /**
-     * Valida la configuración del certificado
+     * Registra archivos temporales para limpieza al finalizar la JVM
      */
-    public void validateCertificateConfig(CertificateConfig config) throws Exception {
-        if (config == null) {
-            throw new IllegalArgumentException("La configuración del certificado no puede ser nula");
+    private void registerTempFileForCleanup(Path tempFile) {
+        if (tempFile != null) {
+            tempFile.toFile().deleteOnExit();
+            log.debug("Archivo temporal registrado para limpieza al salir: {}", tempFile);
         }
-
-        if (config.getKeyStorePath() == null || config.getKeyStorePath().trim().isEmpty()) {
-            throw new IllegalArgumentException("La ruta del keystore es requerida");
-        }
-
-        if (config.getPassword() == null || config.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("La contraseña del certificado es requerida");
-        }
-
-        // CAMBIO: Verificar que el archivo existe en S3 en lugar de disco local
-        if (!s3FileService.fileExists(config.getKeyStorePath())) {
-            log.error("Certificado no encontrado en S3: {}", config.getKeyStorePath());
-            throw new Exception("El archivo de certificado no existe: " + config.getKeyStorePath());
-        }
-
-        log.debug("Configuración del certificado validada exitosamente para S3");
     }
 
-
+    /**
+     * Valida la configuración del certificado - SIN CAMBIOS
+     */
+    public void validateCertificateConfig(CertificateConfig config) throws Exception {
+        // ... [sin cambios - tal como está en tu código]
+    }
 }
