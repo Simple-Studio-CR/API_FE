@@ -264,25 +264,33 @@ public class DigitalSignatureUtil {
         }
 
         // 4. Detectar y limpiar contenido después del elemento raíz
-        // Buscar el último cierre de tag válido
         int lastValidTagEnd = findLastValidTagEnd(xmlContent);
-        if (lastValidTagEnd > 0 && lastValidTagEnd < xmlContent.length() - 1) {
-            String extraContent = xmlContent.substring(lastValidTagEnd).trim();
-            if (!extraContent.isEmpty()) {
-                log.warn("Se encontró contenido después del elemento raíz ({}): '{}'. Se eliminará.",
-                    extraContent.length() + " caracteres",
-                    extraContent.length() > 100 ? extraContent.substring(0, 100) + "..." : extraContent);
+        if (lastValidTagEnd > 0 && lastValidTagEnd < xmlContent.length()) {
+            // Solo hay contenido extra si hay caracteres no-blancos después del cierre
+            String afterContent = xmlContent.substring(lastValidTagEnd);
+            String trimmedAfter = afterContent.trim();
+
+            if (!trimmedAfter.isEmpty()) {
+                // Hay contenido no-blanco después del cierre del elemento raíz
+                log.warn("Se encontró contenido después del elemento raíz: '{}'. Se eliminará.",
+                    trimmedAfter.length() > 100 ? trimmedAfter.substring(0, 100) + "..." : trimmedAfter);
                 xmlContent = xmlContent.substring(0, lastValidTagEnd);
             }
+        } else if (lastValidTagEnd == -1) {
+            // No se encontró el cierre del elemento raíz - el XML está mal formado
+            log.error("No se pudo encontrar el cierre del elemento raíz en el XML");
+            // No modificar el XML, dejar que el parser lance el error apropiado
         }
 
         // 5. Verificar múltiples declaraciones XML
         int firstDecl = xmlContent.indexOf("<?xml");
-        int secondDecl = xmlContent.indexOf("<?xml", firstDecl + 1);
-        if (secondDecl != -1) {
-            log.error("Se detectaron múltiples declaraciones XML. Manteniendo solo la primera.");
-            // Mantener solo hasta la segunda declaración
-            xmlContent = xmlContent.substring(0, secondDecl).trim();
+        if (firstDecl != -1) {
+            int secondDecl = xmlContent.indexOf("<?xml", firstDecl + 1);
+            if (secondDecl != -1) {
+                log.error("Se detectaron múltiples declaraciones XML en posiciones {} y {}", firstDecl, secondDecl);
+                // Esto es un error grave - no intentar arreglarlo
+                throw new IllegalArgumentException("El XML contiene múltiples declaraciones XML");
+            }
         }
 
         // 6. Normalizar saltos de línea
@@ -290,12 +298,12 @@ public class DigitalSignatureUtil {
 
         // 7. Log para debugging (solo en modo debug)
         if (log.isDebugEnabled()) {
-            log.debug("XML limpio - Longitud: {} caracteres", xmlContent.length());
-            log.debug("Primeros 200 caracteres: {}",
-                xmlContent.length() > 200 ? xmlContent.substring(0, 200) + "..." : xmlContent);
-            log.debug("Últimos 200 caracteres: {}",
-                xmlContent.length() > 200 ?
-                    "..." + xmlContent.substring(xmlContent.length() - 200) : xmlContent);
+            log.debug("XML después de limpieza - Longitud: {} caracteres", xmlContent.length());
+            log.debug("Primeros 300 caracteres: {}",
+                xmlContent.length() > 300 ? xmlContent.substring(0, 300) + "..." : xmlContent);
+            log.debug("Últimos 300 caracteres: {}",
+                xmlContent.length() > 300 ?
+                    "..." + xmlContent.substring(xmlContent.length() - 300) : xmlContent);
         }
 
         return xmlContent;
@@ -307,41 +315,56 @@ public class DigitalSignatureUtil {
      */
     private int findLastValidTagEnd(String xmlContent) {
         try {
-            // Buscar el elemento raíz (después de la declaración XML si existe)
-            int rootStart = xmlContent.indexOf("<?xml") >= 0 ?
-                xmlContent.indexOf(">", xmlContent.indexOf("?>") + 2) :
-                xmlContent.indexOf("<");
+            // Buscar donde empieza el elemento raíz (saltando la declaración XML)
+            int rootElementStart = -1;
 
-            if (rootStart == -1) return -1;
-
-            // Encontrar el nombre del elemento raíz
-            int rootNameStart = xmlContent.indexOf("<", rootStart) + 1;
-            int rootNameEnd = rootNameStart;
-
-            // Buscar el final del nombre del elemento (espacio o >)
-            while (rootNameEnd < xmlContent.length() &&
-                xmlContent.charAt(rootNameEnd) != ' ' &&
-                xmlContent.charAt(rootNameEnd) != '>' &&
-                xmlContent.charAt(rootNameEnd) != '/') {
-                rootNameEnd++;
+            // Si hay declaración XML, buscar después de ella
+            if (xmlContent.startsWith("<?xml")) {
+                int xmlDeclEnd = xmlContent.indexOf("?>");
+                if (xmlDeclEnd != -1) {
+                    // Buscar el primer < después de la declaración XML
+                    rootElementStart = xmlContent.indexOf("<", xmlDeclEnd + 2);
+                }
+            } else {
+                // Si no hay declaración XML, el primer < es el elemento raíz
+                rootElementStart = xmlContent.indexOf("<");
             }
 
-            String rootElementName = xmlContent.substring(rootNameStart, rootNameEnd);
+            if (rootElementStart == -1) {
+                return -1;
+            }
+
+            // Extraer el nombre del elemento raíz
+            int nameStart = rootElementStart + 1;
+            int nameEnd = nameStart;
+
+            // Buscar el final del nombre del elemento (espacio, > o /)
+            while (nameEnd < xmlContent.length()) {
+                char ch = xmlContent.charAt(nameEnd);
+                if (ch == ' ' || ch == '>' || ch == '/' || ch == '\n' || ch == '\r' || ch == '\t') {
+                    break;
+                }
+                nameEnd++;
+            }
+
+            String rootElementName = xmlContent.substring(nameStart, nameEnd);
 
             // Buscar el cierre del elemento raíz
             String closeTag = "</" + rootElementName + ">";
             int closeTagIndex = xmlContent.lastIndexOf(closeTag);
 
             if (closeTagIndex != -1) {
+                // Retornar la posición después del cierre del tag
                 return closeTagIndex + closeTag.length();
             }
 
-            // Si no se encuentra, buscar el último > del documento
-            return xmlContent.lastIndexOf(">");
+            // Si no se encuentra el cierre, algo está mal con el XML
+            log.error("No se encontró el cierre del elemento raíz: {}", rootElementName);
+            return -1;
 
         } catch (Exception e) {
             log.warn("Error buscando el final del elemento raíz: {}", e.getMessage());
-            return xmlContent.lastIndexOf(">");
+            return -1;
         }
     }
 

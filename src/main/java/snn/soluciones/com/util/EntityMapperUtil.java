@@ -1,6 +1,5 @@
 package snn.soluciones.com.util;
 
-
 import snn.soluciones.com.mh.CCampoFactura;
 import snn.soluciones.com.models.entity.ComprobantesElectronicos;
 import snn.soluciones.com.models.entity.Emisor;
@@ -12,15 +11,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EntityMapperUtil {
-    
+
     private static final Logger log = LoggerFactory.getLogger(EntityMapperUtil.class);
-    
+
     @Autowired
     private XmlValidationUtil xmlValidationUtil;
-    
+
     @Autowired
     private DocumentTypeUtil documentTypeUtil;
-    
+
     /**
      * Mapea datos del emisor a CCampoFactura
      */
@@ -33,7 +32,7 @@ public class EntityMapperUtil {
             mapEmisorAsEmisor(c, emisor);
         }
     }
-    
+
     /**
      * Mapea emisor como emisor normal
      */
@@ -41,18 +40,18 @@ public class EntityMapperUtil {
         c.setEmisorNombre(emisor.getNombreRazonSocial());
         c.setEmisorTipoIdentif(formatTipoIdentificacion(emisor.getTipoDeIdentificacion().getId()));
         c.setEmisorNumIdentif(emisor.getIdentificacion());
-        
+
         if (emisor.getNombreComercial() != null) {
             c.setNombreComercial(emisor.getNombreComercial());
         }
-        
+
         // Ubicación del emisor
         mapUbicacionEmisor(c, emisor);
-        
+
         // Contacto del emisor
         mapContactoEmisor(c, emisor);
     }
-    
+
     /**
      * Mapea emisor como receptor (para casos especiales como FEC)
      */
@@ -60,14 +59,14 @@ public class EntityMapperUtil {
         c.setReceptorNombre(emisor.getNombreRazonSocial());
         c.setReceptorTipoIdentif(formatTipoIdentificacion(emisor.getTipoDeIdentificacion().getId()));
         c.setReceptorNumIdentif(emisor.getIdentificacion());
-        
+
         // Ubicación del receptor
         mapUbicacionReceptor(c, emisor);
-        
+
         // Contacto del receptor
         mapContactoReceptor(c, emisor);
     }
-    
+
     /**
      * Mapea datos del request JSON al receptor
      */
@@ -76,26 +75,26 @@ public class EntityMapperUtil {
         c.setReceptorNombre(requestData.path("receptorNombre").asText());
         c.setReceptorTipoIdentif(requestData.path("receptorTipoIdentif").asText());
         c.setReceptorNumIdentif(requestData.path("receptorNumIdentif").asText());
-        
+
         // Validar si es identificación extranjera
         if (xmlValidationUtil.isIdentificacionExtranjera(requestData.path("receptorTipoIdentif").asText())) {
             c.setReceptorIdentificacionExtranjero(requestData.path("receptorIdentificacionExtranjero").asText());
             c.setOtrasSenasExtranjero(requestData.path("otrasSenasExtranjero").asText());
         }
-        
+
         // Ubicación del receptor (si no es extranjero)
         if (hasCompleteUbicacion(requestData, "receptor")) {
             c.setReceptorProvincia(requestData.path("receptorProvincia").asText());
             c.setReceptorCanton(requestData.path("receptorCanton").asText());
             c.setReceptorDistrito(requestData.path("receptorDistrito").asText());
-            
+
             if (requestData.has("receptorBarrio")) {
                 c.setReceptorBarrio(requestData.path("receptorBarrio").asText());
             }
-            
+
             c.setReceptorOtrasSenas(requestData.path("receptorOtrasSenas").asText());
         }
-        
+
         // Contacto del receptor
         c.setReceptorCodPaisTel(requestData.path("receptorCodPaisTel").asText());
         c.setReceptorTel(requestData.path("receptorTel").asText());
@@ -103,7 +102,7 @@ public class EntityMapperUtil {
         c.setReceptorFax(requestData.path("receptorFax").asText());
         c.setReceptorEmail(requestData.path("receptorEmail").asText());
     }
-    
+
     /**
      * Mapea datos del request JSON al emisor como receptor (para FEC)
      */
@@ -112,64 +111,93 @@ public class EntityMapperUtil {
         c.setEmisorNombre(requestData.path("receptorNombre").asText());
         c.setEmisorTipoIdentif(requestData.path("receptorTipoIdentif").asText());
         c.setEmisorNumIdentif(requestData.path("receptorNumIdentif").asText());
-        
+
         // Ubicación del emisor desde request
         if (hasCompleteUbicacion(requestData, "receptor")) {
             c.setEmisorProv(requestData.path("receptorProvincia").asText());
             c.setEmisorCanton(requestData.path("receptorCanton").asText());
             c.setEmisorDistrito(requestData.path("receptorDistrito").asText());
-            
+
             if (requestData.has("receptorBarrio")) {
                 c.setEmisorBarrio(requestData.path("receptorBarrio").asText());
             }
-            
+
             c.setEmisorOtrasSenas(requestData.path("receptorOtrasSenas").asText());
         }
-        
+
         // Contacto del emisor desde request
         c.setEmisorCodPaisTel(requestData.path("receptorCodPaisTel").asText());
         c.setEmisorTel(requestData.path("receptorTel").asText());
         c.setEmisorCodPaisFax(requestData.path("receptorCodPaisFax").asText());
         c.setEmisorFax(requestData.path("receptorFax").asText());
         c.setEmisorEmail(requestData.path("receptorEmail").asText());
-        
+
         // Mapear entidad emisor como receptor
         mapEmisorAsReceptor(c, emisor);
     }
-    
+
     /**
-     * Mapea datos comunes de la factura
+     * Mapea datos comunes de la factura - VERSIÓN MEJORADA
      */
     public void mapCommonInvoiceData(CCampoFactura c, JsonNode requestData, String clave, String fechaEmision) {
         c.setClave(clave);
         c.setFechaEmision(fechaEmision);
         c.setConsecutivo(documentTypeUtil.getConsecutivoFromClave(clave));
-        
+
         // Mapear campos comunes
         c.setCodigoActividad(requestData.path("codigoActividad").asText());
         c.setCondVenta(requestData.path("condVenta").asText());
         c.setPlazoCredito(requestData.path("plazoCredito").asText());
-        
+
         // Medios de pago
         c.setMedioPago(requestData.path("medioPago").asText());
         c.setMedioPago2(requestData.path("medioPago2").asText());
         c.setMedioPago3(requestData.path("medioPago3").asText());
         c.setMedioPago4(requestData.path("medioPago4").asText());
-        
+
         // Moneda
         c.setCodMoneda(requestData.path("codMoneda").asText());
         c.setTipoCambio(requestData.path("tipoCambio").asText());
-        
+
         // Totales
         mapTotales(c, requestData);
-        
+
         // Otros datos
         c.setOtros(requestData.path("otros").asText());
-        c.setDetalleFactura(requestData.path("detalleLinea").toString());
-        c.setOtrosCargos(requestData.path("otrosCargos").toString());
-        c.setReferencia(requestData.path("referencia").toString());
+
+        // Mapear detalle línea - MEJORADO
+        JsonNode detalleLinea = requestData.path("detalleLinea");
+        if (detalleLinea.isMissingNode() || detalleLinea.isNull() || !detalleLinea.isArray() || detalleLinea.size() == 0) {
+            // Si no hay detalle línea o es inválido, crear uno básico
+            log.warn("DetalleLinea faltante o inválido, creando detalle básico");
+            String detalleBasico = "[{" +
+                "\"NumeroLinea\":\"1\"," +
+                "\"Cantidad\":\"1\"," +
+                "\"UnidadMedida\":\"Unid\"," +
+                "\"Detalle\":\"Servicio\"," +
+                "\"PrecioUnitario\":\"" + requestData.path("totalVentasNeta").asText("0.00") + "\"," +
+                "\"MontoTotal\":\"" + requestData.path("totalVentasNeta").asText("0.00") + "\"," +
+                "\"SubTotal\":\"" + requestData.path("totalVentasNeta").asText("0.00") + "\"," +
+                "\"MontoTotalLinea\":\"" + requestData.path("totalComprobante").asText("0.00") + "\"" +
+                "}]";
+            c.setDetalleFactura(detalleBasico);
+        } else {
+            c.setDetalleFactura(detalleLinea.toString());
+        }
+
+        // Mapear otros cargos
+        JsonNode otrosCargos = requestData.path("otrosCargos");
+        if (!otrosCargos.isMissingNode() && !otrosCargos.isNull()) {
+            c.setOtrosCargos(otrosCargos.toString());
+        }
+
+        // Mapear referencias
+        JsonNode referencia = requestData.path("referencia");
+        if (!referencia.isMissingNode() && !referencia.isNull()) {
+            c.setReferencia(referencia.toString());
+        }
     }
-    
+
     /**
      * Mapea totales de la factura
      */
@@ -191,7 +219,7 @@ public class EntityMapperUtil {
         c.setTotalOtrosCargos(requestData.path("totalOtrosCargos").asText());
         c.setTotalComprobante(requestData.path("totalComprobante").asText());
     }
-    
+
     /**
      * Mapea ubicación del emisor
      */
@@ -212,7 +240,7 @@ public class EntityMapperUtil {
             c.setEmisorOtrasSenas(emisor.getOtrasSenas());
         }
     }
-    
+
     /**
      * Mapea ubicación del receptor desde emisor
      */
@@ -233,7 +261,7 @@ public class EntityMapperUtil {
             c.setReceptorOtrasSenas(emisor.getOtrasSenas());
         }
     }
-    
+
     /**
      * Mapea contacto del emisor
      */
@@ -246,7 +274,7 @@ public class EntityMapperUtil {
         }
         c.setEmisorEmail(emisor.getEmail());
     }
-    
+
     /**
      * Mapea contacto del receptor desde emisor
      */
@@ -259,31 +287,31 @@ public class EntityMapperUtil {
         }
         c.setReceptorEmail(emisor.getEmail());
     }
-    
+
     /**
      * Formatea tipo de identificación
      */
     private String formatTipoIdentificacion(Long tipoId) {
         return xmlValidationUtil.formatearTipoIdentificacion(tipoId.toString());
     }
-    
+
     /**
      * Verifica si tiene ubicación completa
      */
     private boolean hasCompleteUbicacion(JsonNode data, String prefix) {
-        return data.has(prefix + "Provincia") && 
-               data.has(prefix + "Canton") && 
-               data.has(prefix + "Distrito") && 
-               data.has(prefix + "OtrasSenas");
+        return data.has(prefix + "Provincia") &&
+            data.has(prefix + "Canton") &&
+            data.has(prefix + "Distrito") &&
+            data.has(prefix + "OtrasSenas");
     }
-    
+
     /**
      * Crea ComprobantesElectronicos desde CCampoFactura
      */
-    public ComprobantesElectronicos createComprobantesElectronicos(CCampoFactura c, Emisor emisor, String tipoDocumento, 
-                                                                  Long consecutivo, String xmlFileName) {
+    public ComprobantesElectronicos createComprobantesElectronicos(CCampoFactura c, Emisor emisor, String tipoDocumento,
+        Long consecutivo, String xmlFileName) {
         ComprobantesElectronicos ce = new ComprobantesElectronicos();
-        
+
         ce.setClave(c.getClave());
         ce.setIdentificacion(emisor.getIdentificacion());
         ce.setTipoDocumento(tipoDocumento);
@@ -292,7 +320,7 @@ public class EntityMapperUtil {
         ce.setNameXmlSign(xmlFileName);
         ce.setEmailDistribucion(c.getReceptorEmail());
         ce.setEmisor(emisor);
-        
+
         return ce;
     }
 }
