@@ -352,7 +352,7 @@ public class Sender {
         sucursal + terminal +
         _funcionesService.str_pad(consecutivo, 10, "0", "STR_PAD_LEFT") +
         _funcionesService.str_pad(situacion, 1, "0", "STR_PAD_LEFT") +
-        _funcionesService.str_pad(codigoSeguridad, 8, "0", "STR_PAD_LEFT");
+        _funcionesService.str_pad(codigoSeguridad, 6, "0", "STR_PAD_LEFT");
 
     return "{\"response\":\"" + clave + "\"}";
   }

@@ -24,7 +24,7 @@ public class GeneraXmlImpl implements IGeneraXml {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
-  public String GeneraXml(CCampoFactura campoFactura) {
+  public String GeneraXml(CCampoFactura campoFactura, String tipoDocumento) {
     try {
       log.info("Iniciando generación de XML para clave: {}", campoFactura.getClave());
 
@@ -32,9 +32,6 @@ public class GeneraXmlImpl implements IGeneraXml {
       dbFactory.setNamespaceAware(true);
       DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
       Document doc = dBuilder.newDocument();
-
-      // Determinar tipo de documento
-      String tipoDocumento = determinarTipoDocumento(campoFactura.getClave());
 
       // Crear elemento raíz según tipo
       Element root = crearElementoRaiz(doc, tipoDocumento);
@@ -109,41 +106,33 @@ public class GeneraXmlImpl implements IGeneraXml {
     }
   }
 
-  private String determinarTipoDocumento(String clave) {
-    // El tipo de documento está en las posiciones 29-30 de la clave
-    if (clave != null && clave.length() >= 30) {
-      return clave.substring(29, 31);
-    }
-    return "01"; // Default: Factura Electrónica
-  }
-
   private Element crearElementoRaiz(Document doc, String tipoDocumento) {
     Element root;
     String namespace;
     String elementName;
 
     switch (tipoDocumento) {
-      case "01":
+      case "FE":
         namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronica";
         elementName = "FacturaElectronica";
         break;
-      case "02":
+      case "NBE":
         namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/notaDebitoElectronica";
         elementName = "NotaDebitoElectronica";
         break;
-      case "03":
+      case "NCE":
         namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/notaCreditoElectronica";
         elementName = "NotaCreditoElectronica";
         break;
-      case "04":
+      case "TE":
         namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/tiqueteElectronico";
         elementName = "TiqueteElectronico";
         break;
-      case "08":
+      case "FEC":
         namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronicaCompra";
         elementName = "FacturaElectronicaCompra";
         break;
-      case "09":
+      case "FEE":
         namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronicaExportacion";
         elementName = "FacturaElectronicaExportacion";
         break;
@@ -510,7 +499,7 @@ public class GeneraXmlImpl implements IGeneraXml {
   @Override
   public String GeneraXmlDocumentos(CCampoFactura paramCCampoFactura) {
     // Implementación para otros tipos de documentos
-    return GeneraXml(paramCCampoFactura);
+    return GeneraXml(paramCCampoFactura, "" );
   }
 
   @Override

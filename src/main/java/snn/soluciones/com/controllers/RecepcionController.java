@@ -530,7 +530,7 @@ public class RecepcionController {
 
     try {
       // Generar XML
-      String xmlContent = _generaXml.GeneraXml(campoFactura);
+      String xmlContent = _generaXml.GeneraXml(campoFactura, tipoDocumento);
 
       // Definir nombres de archivos
       String xmlFileName = campoFactura.getClave() + "-factura";

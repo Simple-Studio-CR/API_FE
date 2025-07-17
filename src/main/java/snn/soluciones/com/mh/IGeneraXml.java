@@ -1,7 +1,7 @@
 package snn.soluciones.com.mh;
 
 public interface IGeneraXml {
-  String GeneraXml(CCampoFactura paramCCampoFactura);
+  String GeneraXml(CCampoFactura paramCCampoFactura, String paramString);
   
   String GeneraXmlDocumentos(CCampoFactura paramCCampoFactura);
   

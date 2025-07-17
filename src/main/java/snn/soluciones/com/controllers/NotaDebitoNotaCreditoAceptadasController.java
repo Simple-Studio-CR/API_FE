@@ -142,7 +142,7 @@ public class NotaDebitoNotaCreditoAceptadasController {
       processingUtil.calculateTotals(campoFactura, requestNode);
 
       // 13. GENERACIÓN DE XML (SERVICIOS ORIGINALES)
-      String xmlContent = _generaXml.GeneraXml(campoFactura);
+      String xmlContent = _generaXml.GeneraXml(campoFactura, tipoDocumento);
 
       // 14. ALMACENAMIENTO DE ARCHIVOS Y FIRMA
       String nameFacturaFirmada = processingUtil.saveAndSignXmlFiles(
