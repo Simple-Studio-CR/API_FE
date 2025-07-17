@@ -69,8 +69,8 @@ path:
 # Configuración de logs específicos para migración
 logging:
   level:
-    app.simplestudio.com.service.adapter.StorageAdapter: DEBUG
-    app.simplestudio.com.service.impl.S3StorageServiceImpl: DEBUG
+    snn.soluciones.com.service.adapter.StorageAdapter: DEBUG
+    snn.soluciones.com.service.impl.snn.soluciones.com.service.impl.S3StorageServiceImpl: DEBUG
     software.amazon.awssdk.services.s3: WARN
 
   pattern:
