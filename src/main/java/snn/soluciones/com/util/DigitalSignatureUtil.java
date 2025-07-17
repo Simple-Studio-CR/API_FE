@@ -115,6 +115,7 @@ public class DigitalSignatureUtil {
                 throw new Exception("Solo se admiten rutas S3. Ruta no válida: " + params.getXmlInputPath());
             }
 
+            // Procesar firma con S3
             return signXmlDocumentFromS3(params, startTime);
 
         } catch (Exception e) {
@@ -134,7 +135,7 @@ public class DigitalSignatureUtil {
         // 1. Descargar XML desde S3
         String xmlContent = downloadXmlFromS3(params.getXmlInputPath());
 
-        // 2. Crear documento en memoria
+        // 2. Parsear XML en memoria
         Document xmlDocument = parseXmlFromString(xmlContent);
 
         // 3. Crear recursos para firma
@@ -526,26 +527,14 @@ public class DigitalSignatureUtil {
      * HELPER: Detecta si la ruta es S3 - SOLO ACEPTA S3
      * Basado en el patrón de rutas que usa tu aplicación
      */
-    private boolean isS3Path(String path) {
-        // SOLO aceptar rutas S3 explícitas según el patrón de tu aplicación
-        // Basado en el log: "XmlClientes/114970286/5061607250100011497028601001000010000000159172231794-factura.xml"
-
+    boolean isS3Path(String path) {
         if (path == null || path.trim().isEmpty()) {
             return false;
         }
 
-        // Patrones válidos de S3 en tu aplicación:
-        // 1. XmlClientes/{identificador}/{clave}-{tipo}.xml
-        // 2. Rutas que empiezan con prefijos conocidos
-        boolean isValid = path.startsWith("XmlClientes/") ||
-            path.startsWith("XmlFirmados/") ||
-            path.startsWith("XmlRespuestas/") ||
-            path.matches(".*\\d+/.*\\.xml$"); // patrón: números/archivo.xml
-
-        if (!isValid) {
-            log.debug("Ruta no es S3 válida: {}", path);
-        }
-
-        return isValid;
+        // Solo aceptar rutas S3 del patrón usado en la aplicación
+        return path.startsWith("XmlClientes/") ||
+            path.startsWith("certificados/") ||
+            path.contains(".digitaloceanspaces.com");
     }
 }

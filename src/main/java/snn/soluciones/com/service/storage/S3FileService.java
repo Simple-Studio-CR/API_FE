@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -135,15 +136,24 @@ public class S3FileService {
     /**
      * Descarga archivo de S3 como String
      */
-    public String downloadFileAsString(String key) {
-        try (InputStream inputStream = downloadFile(key)) {
-            if (inputStream == null) {
-                return null;
-            }
-            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            log.error("Error leyendo archivo como string: {}", key, e);
-            throw new RuntimeException("Error leyendo archivo: " + e.getMessage(), e);
+    public String downloadFileAsString(String key) throws Exception {
+        try {
+            log.debug("Descargando archivo como String desde S3: {}", key);
+
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+            ResponseBytes<GetObjectResponse> responseBytes = s3Client.getObjectAsBytes(getObjectRequest);
+            String content = responseBytes.asUtf8String();
+
+            log.debug("Archivo descargado exitosamente: {} caracteres", content.length());
+            return content;
+
+        } catch (S3Exception e) {
+            log.error("Error S3 descargando archivo: {}", e.awsErrorDetails().errorMessage());
+            throw new Exception("Error descargando archivo de S3: " + e.getMessage());
         }
     }
 
@@ -262,7 +272,7 @@ public class S3FileService {
     /**
      * Lee XML firmado
      */
-    public String readSignedXmlFile(String emisorId, String xmlFileName) {
+    public String readSignedXmlFile(String emisorId, String xmlFileName) throws Exception {
         String s3Key = buildKey(emisorId, xmlFileName);
         return downloadFileAsString(s3Key);
     }
@@ -270,7 +280,7 @@ public class S3FileService {
     /**
      * Lee respuesta de Hacienda
      */
-    public String readResponseXmlFile(String emisorId, String xmlFileName) {
+    public String readResponseXmlFile(String emisorId, String xmlFileName) throws Exception {
         String s3Key = buildKey(emisorId, xmlFileName);
         return downloadFileAsString(s3Key);
     }
@@ -367,7 +377,7 @@ public class S3FileService {
     /**
      * Método para compatibilidad con rutas legacy de disco
      */
-    public String readFromFile(String filePath) {
+    public String readFromFile(String filePath) throws Exception {
         FilePathComponents components = parseFilePath(filePath);
         String s3Key = buildKey(components.emisorId, components.filename);
         return downloadFileAsString(s3Key);

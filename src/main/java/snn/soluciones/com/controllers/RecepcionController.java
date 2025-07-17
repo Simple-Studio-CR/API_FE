@@ -528,63 +528,43 @@ public class RecepcionController {
   private ResponseEntity<?> processDocumentGeneration(CCampoFactura campoFactura, Emisor emisor,
       String tipoDocumento, Long consecutivo) throws Exception {
 
-    // Generar XML
-    String xmlContent = _generaXml.GeneraXml(campoFactura);
+    try {
+      // Generar XML
+      String xmlContent = _generaXml.GeneraXml(campoFactura);
 
-    // Definir nombres de archivos
-    String xmlFileName = campoFactura.getClave() + "-factura";
-    String xmlSignedFileName = campoFactura.getClave() + "-factura-sign";
+      // Definir nombres de archivos
+      String xmlFileName = campoFactura.getClave() + "-factura";
+      String xmlSignedFileName = campoFactura.getClave() + "-factura-sign";
 
-    // 1. GUARDAR XML ORIGINAL EN S3
-    String xmlS3Key = "XmlClientes/" + emisor.getIdentificacion() + "/" + xmlFileName + ".xml";
-    s3FileService.uploadFile(xmlS3Key, xmlContent, "application/xml");
-    log.info("XML original guardado en S3: {}", xmlS3Key);
+      // 1. GUARDAR XML ORIGINAL EN S3
+      String xmlS3Key = "XmlClientes/" + emisor.getIdentificacion() + "/" + xmlFileName + ".xml";
+      s3FileService.uploadFile(xmlS3Key, xmlContent, "application/xml");
+      log.info("XML original guardado en S3: {}", xmlS3Key);
 
-    // 2. DESCARGAR XML DE S3 A ARCHIVO TEMPORAL PARA FIRMA
-    String tempDir = System.getProperty("java.io.tmpdir");
-    String tempXmlPath = tempDir + "/" + xmlFileName + ".xml";
-    String tempSignedXmlPath = tempDir + "/" + xmlSignedFileName + ".xml";
+      // 2. DEFINIR RUTAS S3 PARA FIRMA (ya no usamos /tmp/)
+      String xmlS3InputPath = xmlS3Key;
+      String xmlS3OutputPath = "XmlClientes/" + emisor.getIdentificacion() + "/" + xmlSignedFileName + ".xml";
 
-    try (InputStream xmlInputStream = s3FileService.downloadFile(xmlS3Key)) {
-      if (xmlInputStream == null) {
-        throw new RuntimeException("No se pudo descargar el XML de S3 para firma");
-      }
-
-      // Guardar temporalmente para firma
-      Files.copy(xmlInputStream, Paths.get(tempXmlPath), StandardCopyOption.REPLACE_EXISTING);
-      log.debug("XML descargado temporalmente para firma: {}", tempXmlPath);
-
-      // 3. FIRMAR XML
+      // 3. FIRMAR DIRECTAMENTE USANDO RUTAS S3
       String certificatePath = invoiceProcessingUtil.buildCertificatePath(
           pathUploadFilesApi, emisor.getIdentificacion(), emisor.getCertificado()
       );
 
-      _signer.sign(certificatePath, emisor.getPingApi(), tempXmlPath, tempSignedXmlPath);
-      log.info("XML firmado exitosamente: {}", tempSignedXmlPath);
+      _signer.sign(certificatePath, emisor.getPingApi(), xmlS3InputPath, xmlS3OutputPath);
+      log.info("XML firmado exitosamente en S3: {}", xmlS3OutputPath);
 
-      // 4. SUBIR XML FIRMADO A S3
-      String signedXmlContent = Files.readString(Paths.get(tempSignedXmlPath), StandardCharsets.UTF_8);
-      String signedXmlS3Key = "XmlClientes/" + emisor.getIdentificacion() + "/" + xmlSignedFileName + ".xml";
-      s3FileService.uploadFile(signedXmlS3Key, signedXmlContent, "application/xml");
-      log.info("XML firmado guardado en S3: {}", signedXmlS3Key);
-
-      // 5. CREAR REGISTRO EN BD
+      // 4. CREAR REGISTRO EN BD
       ComprobantesElectronicos ce = entityMapperUtil.createComprobantesElectronicos(
           campoFactura, emisor, tipoDocumento, consecutivo, xmlSignedFileName
       );
       _comprobantesElectronicosService.save(ce);
 
-      // 6. LIMPIAR ARCHIVOS TEMPORALES
-      Files.deleteIfExists(Paths.get(tempXmlPath));
-      Files.deleteIfExists(Paths.get(tempSignedXmlPath));
-      log.debug("Archivos temporales limpiados");
-
-      // 7. LOG DE ÉXITO
+      // 5. LOG DE ÉXITO
       invoiceProcessingUtil.logProcessingDetails(new InvoiceProcessingUtil.InvoiceProcessingParams(
           null, emisor, tipoDocumento, pathUploadFilesApi
       ));
 
-      // 8. CONSTRUIR RESPUESTA DE ÉXITO
+      // 6. CONSTRUIR RESPUESTA DE ÉXITO
       Map<String, Object> response = invoiceProcessingUtil.buildSuccessResponse(
           campoFactura.getClave(), "Documento procesado exitosamente"
       );
@@ -592,19 +572,11 @@ public class RecepcionController {
       response.put("fechaEmision", campoFactura.getFechaEmision());
       response.put("fileXmlSign", xmlSignedFileName);
       response.put("s3UrlOriginal", s3FileService.buildUrl(xmlS3Key));
-      response.put("s3UrlSigned", s3FileService.buildUrl(signedXmlS3Key));
+      response.put("s3UrlSigned", s3FileService.buildUrl(xmlS3OutputPath));
 
       return new ResponseEntity<>(response, HttpStatus.OK);
 
     } catch (Exception e) {
-      // Limpiar archivos temporales en caso de error
-      try {
-        Files.deleteIfExists(Paths.get(tempXmlPath));
-        Files.deleteIfExists(Paths.get(tempSignedXmlPath));
-      } catch (Exception cleanupEx) {
-        log.warn("Error limpiando archivos temporales: {}", cleanupEx.getMessage());
-      }
-
       log.error("Error en processDocumentGeneration: {}", e.getMessage(), e);
       throw e;
     }

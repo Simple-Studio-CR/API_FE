@@ -1,5 +1,7 @@
 package snn.soluciones.com.util;
 
+import java.io.ByteArrayInputStream;
+import java.security.KeyStore;
 import snn.soluciones.com.mh.DirectPasswordProvider;
 import snn.soluciones.com.mh.FirstCertificateSelector;
 import snn.soluciones.com.service.storage.S3FileService;
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import xades4j.providers.KeyingDataProvider;
 import xades4j.providers.impl.FileSystemKeyStoreKeyingDataProvider;
+import xades4j.providers.impl.KeyStoreKeyingDataProvider;
 
 @Component
 public class CertificateManagerUtil {
@@ -18,6 +21,9 @@ public class CertificateManagerUtil {
 
     @Autowired
     private S3FileService s3FileService;
+
+    @Autowired
+    private DigitalSignatureUtil digitalSignatureUtill;
     
     /**
      * Configuración de certificado para firma
