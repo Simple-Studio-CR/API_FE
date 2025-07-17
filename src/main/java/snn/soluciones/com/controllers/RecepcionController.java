@@ -1,5 +1,10 @@
 package snn.soluciones.com.controllers;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import snn.soluciones.com.mh.CCampoFactura;
 import snn.soluciones.com.mh.IGeneraXml;
 import snn.soluciones.com.mh.ISigner;
