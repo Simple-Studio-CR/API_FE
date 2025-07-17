@@ -43,7 +43,7 @@ public class GeneraXmlImpl implements IGeneraXml {
       // Agregar código de actividad
       addElement(doc, root, "CodigoActividad", campoFactura.getCodigoActividad());
 
-      // Agregar número consecutivo - CORREGIDO
+      // Agregar número consecutivo
       addElement(doc, root, "NumeroConsecutivo", campoFactura.getConsecutivo());
 
       // Agregar fecha de emisión
@@ -57,11 +57,11 @@ public class GeneraXmlImpl implements IGeneraXml {
         agregarReceptor(doc, root, campoFactura);
       }
 
-      // Agregar condición de venta - CORREGIDO
+      // Agregar condición de venta
       addElement(doc, root, "CondicionVenta", campoFactura.getCondVenta());
 
-      // Agregar plazo de crédito si aplica
-      if ("02".equals(campoFactura.getCondVenta())) {
+      // Agregar plazo crédito
+      if (campoFactura.getPlazoCredito() != null && !campoFactura.getPlazoCredito().isEmpty()) {
         addElement(doc, root, "PlazoCredito", campoFactura.getPlazoCredito());
       }
 
@@ -71,34 +71,17 @@ public class GeneraXmlImpl implements IGeneraXml {
       // Agregar detalle del servicio
       agregarDetalleServicio(doc, root, campoFactura);
 
-      // Agregar resumen de factura
+      // Agregar resumen de factura con soporte para exoneración
       agregarResumenFactura(doc, root, campoFactura);
 
-      // Agregar referencias (para NC y ND)
+      // Agregar información de referencia si existe
       if (campoFactura.getReferencia() != null && !campoFactura.getReferencia().isEmpty()) {
-        agregarReferencias(doc, root, campoFactura);
+        procesarInformacionReferencia(doc, root, campoFactura.getReferencia());
       }
 
-      // Agregar otros campos
-      if (campoFactura.getOtros() != null && !campoFactura.getOtros().isEmpty()) {
-        addElement(doc, root, "Otros", campoFactura.getOtros());
-      }
+      agregarOtrosConProveedor(doc, root, campoFactura);
 
-      // Convertir documento a string
-      String xmlString = documentToString(doc);
-
-      // Verificación final del XML
-      String rootElementName = root.getNodeName();
-      if (!xmlString.contains("</" + rootElementName + ">")) {
-        log.error("XML no contiene etiqueta de cierre para elemento raíz: {}", rootElementName);
-        throw new RuntimeException("XML mal formado - falta etiqueta de cierre");
-      }
-
-      log.info("XML generado exitosamente: {} caracteres", xmlString.length());
-      log.debug("Verificación - Inicio del XML: {}", xmlString.substring(0, Math.min(200, xmlString.length())));
-      log.debug("Verificación - Fin del XML: {}", xmlString.substring(Math.max(0, xmlString.length() - 200)));
-
-      return xmlString;
+      return documentToString(doc);
 
     } catch (Exception e) {
       log.error("Error generando XML: {}", e.getMessage(), e);
@@ -106,48 +89,78 @@ public class GeneraXmlImpl implements IGeneraXml {
     }
   }
 
-  private Element crearElementoRaiz(Document doc, String tipoDocumento) {
-    Element root;
-    String namespace;
-    String elementName;
+  private void agregarOtrosConProveedor(Document doc, Element parent, CCampoFactura campoFactura) {
+    Element otros = doc.createElement("Otros");
+    parent.appendChild(otros);
 
-    switch (tipoDocumento) {
-      case "FE":
-        namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronica";
-        elementName = "FacturaElectronica";
-        break;
-      case "NBE":
-        namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/notaDebitoElectronica";
-        elementName = "NotaDebitoElectronica";
-        break;
-      case "NCE":
-        namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/notaCreditoElectronica";
-        elementName = "NotaCreditoElectronica";
-        break;
-      case "TE":
-        namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/tiqueteElectronico";
-        elementName = "TiqueteElectronico";
-        break;
-      case "FEC":
-        namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronicaCompra";
-        elementName = "FacturaElectronicaCompra";
-        break;
-      case "FEE":
-        namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronicaExportacion";
-        elementName = "FacturaElectronicaExportacion";
-        break;
-      default:
-        namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronica";
-        elementName = "FacturaElectronica";
+    // Agregar OtrosTexto si existe
+    if (campoFactura.getOtros() != null && !campoFactura.getOtros().isEmpty()) {
+      addElement(doc, otros, "OtrosTexto", campoFactura.getOtros());
     }
 
-    // Crear elemento raíz con namespace
-    root = doc.createElementNS(namespace, elementName);
+    // Agregar información del proveedor
+    Element otroContenido = doc.createElement("OtroContenido");
+    otros.appendChild(otroContenido);
 
-    // IMPORTANTE: No usar setAttributeNS para el namespace principal
-    // El namespace ya está definido en createElementNS
+    Element contactoDesarrollador = doc.createElementNS("https://snnsoluciones.com", "ContactoDesarrollador");
+    otroContenido.appendChild(contactoDesarrollador);
 
-    // Agregar solo los atributos xsi y xsd como atributos normales
+    Element proveedor = doc.createElement("ProveedorSistemaComprobantesElectronicos");
+    contactoDesarrollador.appendChild(proveedor);
+
+    addElement(doc, proveedor, "Nombre", "Andrés Mayorga Espinoza");
+
+    Element identificacion = doc.createElement("Identificacion");
+    proveedor.appendChild(identificacion);
+    addElement(doc, identificacion, "Tipo", "01");
+    addElement(doc, identificacion, "Numero", "114970286");
+
+    addElement(doc, proveedor, "CorreoElectronico", "info@snnsoluciones.com");
+
+    Element telefono = doc.createElement("Telefono");
+    proveedor.appendChild(telefono);
+    addElement(doc, telefono, "CodigoPais", "506");
+    addElement(doc, telefono, "NumTelefono", "72010233");
+
+    addElement(doc, proveedor, "SitioWeb", "www.snnsoluciones.com");
+    addElement(doc, proveedor, "NombreEmpresa", "SNN Soluciones");
+  }
+
+  private Element crearElementoRaiz(Document doc, String tipoDocumento) {
+    String namespace = "https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/";
+    String rootElementName = "";
+
+    switch (tipoDocumento) {
+      case "01":
+        rootElementName = "FacturaElectronica";
+        namespace += "facturaElectronica";
+        break;
+      case "02":
+        rootElementName = "NotaDebitoElectronica";
+        namespace += "notaDebitoElectronica";
+        break;
+      case "03":
+        rootElementName = "NotaCreditoElectronica";
+        namespace += "notaCreditoElectronica";
+        break;
+      case "04":
+        rootElementName = "TiqueteElectronico";
+        namespace += "tiqueteElectronico";
+        break;
+      case "08":
+        rootElementName = "FacturaElectronicaCompra";
+        namespace += "facturaElectronicaCompra";
+        break;
+      case "09":
+        rootElementName = "FacturaElectronicaExportacion";
+        namespace += "facturaElectronicaExportacion";
+        break;
+      default:
+        rootElementName = "FacturaElectronica";
+        namespace += "facturaElectronica";
+    }
+
+    Element root = doc.createElementNS(namespace, rootElementName);
     root.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
     root.setAttribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
 
@@ -165,29 +178,26 @@ public class GeneraXmlImpl implements IGeneraXml {
     addElement(doc, identificacion, "Tipo", campoFactura.getEmisorTipoIdentif());
     addElement(doc, identificacion, "Numero", campoFactura.getEmisorNumIdentif());
 
-    // NombreComercial - CORREGIDO
     if (campoFactura.getNombreComercial() != null && !campoFactura.getNombreComercial().isEmpty()) {
       addElement(doc, emisor, "NombreComercial", campoFactura.getNombreComercial());
     }
 
-    Element ubicacion = doc.createElement("Ubicacion");
-    emisor.appendChild(ubicacion);
-    addElement(doc, ubicacion, "Provincia", campoFactura.getEmisorProv());
-    addElement(doc, ubicacion, "Canton", campoFactura.getEmisorCanton());
-    addElement(doc, ubicacion, "Distrito", campoFactura.getEmisorDistrito());
-    addElement(doc, ubicacion, "Barrio", campoFactura.getEmisorBarrio());
-    addElement(doc, ubicacion, "OtrasSenas", campoFactura.getEmisorOtrasSenas());
+    if (campoFactura.getEmisorProv() != null || campoFactura.getEmisorCanton() != null ||
+        campoFactura.getEmisorDistrito() != null || campoFactura.getEmisorBarrio() != null) {
+      Element ubicacion = doc.createElement("Ubicacion");
+      emisor.appendChild(ubicacion);
+      addElement(doc, ubicacion, "Provincia", campoFactura.getEmisorProv());
+      addElement(doc, ubicacion, "Canton", campoFactura.getEmisorCanton());
+      addElement(doc, ubicacion, "Distrito", campoFactura.getEmisorDistrito());
+      addElement(doc, ubicacion, "Barrio", campoFactura.getEmisorBarrio());
+      addElement(doc, ubicacion, "OtrasSenas", campoFactura.getEmisorOtrasSenas());
+    }
 
-    Element telefono = doc.createElement("Telefono");
-    emisor.appendChild(telefono);
-    addElement(doc, telefono, "CodigoPais", campoFactura.getEmisorCodPaisTel());
-    addElement(doc, telefono, "NumTelefono", campoFactura.getEmisorTel());
-
-    if (campoFactura.getEmisorFax() != null) {
-      Element fax = doc.createElement("Fax");
-      emisor.appendChild(fax);
-      addElement(doc, fax, "CodigoPais", campoFactura.getEmisorCodPaisFax());
-      addElement(doc, fax, "NumTelefono", campoFactura.getEmisorFax());
+    if (campoFactura.getEmisorCodPaisTel() != null && campoFactura.getEmisorTel() != null) {
+      Element telefono = doc.createElement("Telefono");
+      emisor.appendChild(telefono);
+      addElement(doc, telefono, "CodigoPais", campoFactura.getEmisorCodPaisTel());
+      addElement(doc, telefono, "NumTelefono", campoFactura.getEmisorTel());
     }
 
     addElement(doc, emisor, "CorreoElectronico", campoFactura.getEmisorEmail());
@@ -206,7 +216,8 @@ public class GeneraXmlImpl implements IGeneraXml {
       addElement(doc, identificacion, "Numero", campoFactura.getReceptorNumIdentif());
     }
 
-    if (campoFactura.getReceptorProvincia() != null) {
+    if (campoFactura.getReceptorProvincia() != null || campoFactura.getReceptorCanton() != null ||
+        campoFactura.getReceptorDistrito() != null || campoFactura.getReceptorBarrio() != null) {
       Element ubicacion = doc.createElement("Ubicacion");
       receptor.appendChild(ubicacion);
       addElement(doc, ubicacion, "Provincia", campoFactura.getReceptorProvincia());
@@ -240,7 +251,6 @@ public class GeneraXmlImpl implements IGeneraXml {
           detalleArray = objectMapper.readTree(campoFactura.getDetalleFactura());
         } catch (Exception e) {
           log.warn("No se pudo parsear detalleFactura como JSON, intentando como string: {}", e.getMessage());
-          // Si no es JSON válido, crear un detalle básico
           agregarLineaDetalleBasica(doc, detalleServicio, campoFactura);
           return;
         }
@@ -266,7 +276,7 @@ public class GeneraXmlImpl implements IGeneraXml {
             addElement(doc, codigoComercial, "Codigo", detalle.path("CodigoComercial").path("Codigo").asText());
           }
 
-          // Código
+          // Código CABYS
           if (detalle.has("Codigo")) {
             addElement(doc, lineaDetalle, "Codigo", detalle.path("Codigo").asText());
           }
@@ -302,22 +312,48 @@ public class GeneraXmlImpl implements IGeneraXml {
             addElement(doc, lineaDetalle, "BaseImponible", detalle.path("BaseImponible").asText());
           }
 
-          // Impuestos
+          // Impuestos con soporte para exoneración
           if (detalle.has("Impuesto") && !detalle.get("Impuesto").isNull()) {
             JsonNode impuestos = detalle.get("Impuesto");
             if (impuestos.isArray()) {
               for (JsonNode imp : impuestos) {
                 Element impuesto = doc.createElement("Impuesto");
                 lineaDetalle.appendChild(impuesto);
+
                 addElement(doc, impuesto, "Codigo", imp.path("Codigo").asText());
                 addElement(doc, impuesto, "CodigoTarifa", imp.path("CodigoTarifa").asText());
                 addElement(doc, impuesto, "Tarifa", imp.path("Tarifa").asText());
+
+                // Factor IVA (para IVA Bienes Usados)
+                if (imp.has("FactorIVA")) {
+                  addElement(doc, impuesto, "FactorIVA", imp.path("FactorIVA").asText());
+                }
+
                 addElement(doc, impuesto, "Monto", imp.path("Monto").asText());
+
+                // Monto de exportación
+                if (imp.has("MontoExportacion")) {
+                  addElement(doc, impuesto, "MontoExportacion", imp.path("MontoExportacion").asText());
+                }
+
+                // NUEVO: Procesar exoneración si existe
+                if (imp.has("Exoneracion") && !imp.get("Exoneracion").isNull()) {
+                  Element exoneracion = doc.createElement("Exoneracion");
+                  impuesto.appendChild(exoneracion);
+
+                  JsonNode exon = imp.get("Exoneracion");
+                  addElement(doc, exoneracion, "TipoDocumento", exon.path("TipoDocumento").asText());
+                  addElement(doc, exoneracion, "NumeroDocumento", exon.path("NumeroDocumento").asText());
+                  addElement(doc, exoneracion, "NombreInstitucion", exon.path("NombreInstitucion").asText());
+                  addElement(doc, exoneracion, "FechaEmision", exon.path("FechaEmision").asText());
+                  addElement(doc, exoneracion, "PorcentajeExoneracion", exon.path("PorcentajeExoneracion").asText());
+                  addElement(doc, exoneracion, "MontoExoneracion", exon.path("MontoExoneracion").asText());
+                }
               }
             }
           }
 
-          // Impuesto neto
+          // Impuesto neto (cuando hay exoneración)
           if (detalle.has("ImpuestoNeto")) {
             addElement(doc, lineaDetalle, "ImpuestoNeto", detalle.path("ImpuestoNeto").asText());
           }
@@ -331,16 +367,12 @@ public class GeneraXmlImpl implements IGeneraXml {
       }
     } catch (Exception e) {
       log.error("Error procesando detalle del servicio: {}", e.getMessage());
-      // En caso de error, agregar línea básica para que el XML sea válido
       Element detalleServicio = doc.createElement("DetalleServicio");
       parent.appendChild(detalleServicio);
       agregarLineaDetalleBasica(doc, detalleServicio, campoFactura);
     }
   }
 
-  /**
-   * Agrega una línea de detalle básica cuando no hay detalle o hay error
-   */
   private void agregarLineaDetalleBasica(Document doc, Element detalleServicio, CCampoFactura campoFactura) {
     Element lineaDetalle = doc.createElement("LineaDetalle");
     detalleServicio.appendChild(lineaDetalle);
@@ -356,61 +388,91 @@ public class GeneraXmlImpl implements IGeneraXml {
   }
 
   private void agregarResumenFactura(Document doc, Element parent, CCampoFactura campoFactura) {
-    Element resumen = doc.createElement("ResumenFactura");
-    parent.appendChild(resumen);
+    Element resumenFactura = doc.createElement("ResumenFactura");
+    parent.appendChild(resumenFactura);
 
-    // Código de tipo de moneda - CORREGIDO
-    if (campoFactura.getCodMoneda() != null) {
+    // Código de moneda y tipo de cambio
+    if (campoFactura.getTipoCambio() != null || campoFactura.getCodMoneda() != null) {
       Element codigoTipoMoneda = doc.createElement("CodigoTipoMoneda");
-      resumen.appendChild(codigoTipoMoneda);
+      resumenFactura.appendChild(codigoTipoMoneda);
       addElement(doc, codigoTipoMoneda, "CodigoMoneda", campoFactura.getCodMoneda());
       addElement(doc, codigoTipoMoneda, "TipoCambio", campoFactura.getTipoCambio());
     }
 
-    // Totales - TODOS CORREGIDOS
-    addElement(doc, resumen, "TotalServGravados", campoFactura.getTotalServGravados());
-    addElement(doc, resumen, "TotalServExentos", campoFactura.getTotalServExentos());
-    addElement(doc, resumen, "TotalServExonerado", campoFactura.getTotalServExonerado());
-    addElement(doc, resumen, "TotalMercanciasGravadas", campoFactura.getTotalMercGravadas());
-    addElement(doc, resumen, "TotalMercanciasExentas", campoFactura.getTotalMercExentas());
-    addElement(doc, resumen, "TotalMercExonerada", campoFactura.getTotalMercExonerada());
-    addElement(doc, resumen, "TotalGravado", campoFactura.getTotalGravados());
-    addElement(doc, resumen, "TotalExento", campoFactura.getTotalExentos());
-    addElement(doc, resumen, "TotalExonerado", campoFactura.getTotalExonerado());
-    addElement(doc, resumen, "TotalVenta", campoFactura.getTotalVentas());
-    addElement(doc, resumen, "TotalDescuentos", campoFactura.getTotalDescuentos());
-    addElement(doc, resumen, "TotalVentaNeta", campoFactura.getTotalVentasNeta());
-    addElement(doc, resumen, "TotalImpuesto", campoFactura.getTotalImp());
-
-    // Total IVA Devuelto (si aplica)
-    if (campoFactura.getTotalIVADevuelto() != null && !campoFactura.getTotalIVADevuelto().equals("0.00000")) {
-      addElement(doc, resumen, "TotalIVADevuelto", campoFactura.getTotalIVADevuelto());
+    // NUEVO: Agregar campos para exoneración
+    if (campoFactura.getTotalServGravados() != null) {
+      addElement(doc, resumenFactura, "TotalServGravados", campoFactura.getTotalServGravados());
     }
 
-    // Total otros cargos (si aplica)
-    if (campoFactura.getTotalOtrosCargos() != null && !campoFactura.getTotalOtrosCargos().equals("0.00000")) {
-      addElement(doc, resumen, "TotalOtrosCargos", campoFactura.getTotalOtrosCargos());
+    if (campoFactura.getTotalServExentos() != null) {
+      addElement(doc, resumenFactura, "TotalServExentos", campoFactura.getTotalServExentos());
     }
 
-    addElement(doc, resumen, "TotalComprobante", campoFactura.getTotalComprobante());
+    // NUEVO: Total servicios exonerados
+    if (campoFactura.getTotalServExonerado() != null) {
+      addElement(doc, resumenFactura, "TotalServExonerado", campoFactura.getTotalServExonerado());
+    }
+
+    if (campoFactura.getTotalMercGravadas() != null) {
+      addElement(doc, resumenFactura, "TotalMercanciasGravadas", campoFactura.getTotalMercGravadas());
+    }
+
+    if (campoFactura.getTotalMercExentas() != null) {
+      addElement(doc, resumenFactura, "TotalMercanciasExentas", campoFactura.getTotalMercExentas());
+    }
+
+    // NUEVO: Total mercancías exoneradas
+    if (campoFactura.getTotalMercExonerada() != null) {
+      addElement(doc, resumenFactura, "TotalMercExonerada", campoFactura.getTotalMercExonerada());
+    }
+
+    addElement(doc, resumenFactura, "TotalGravado", campoFactura.getTotalGravados());
+    addElement(doc, resumenFactura, "TotalExento", campoFactura.getTotalExentos());
+
+    // NUEVO: Total exonerado
+    if (campoFactura.getTotalExonerado() != null) {
+      addElement(doc, resumenFactura, "TotalExonerado", campoFactura.getTotalExonerado());
+    }
+
+    addElement(doc, resumenFactura, "TotalVenta", campoFactura.getTotalVentas());
+
+    if (campoFactura.getTotalDescuentos() != null) {
+      addElement(doc, resumenFactura, "TotalDescuentos", campoFactura.getTotalDescuentos());
+    }
+
+    addElement(doc, resumenFactura, "TotalVentaNeta", campoFactura.getTotalVentasNeta());
+
+    if (campoFactura.getTotalImp() != null) {
+      addElement(doc, resumenFactura, "TotalImpuesto", campoFactura.getTotalImp());
+    }
+
+    // IVA Devuelto
+    if (campoFactura.getTotalIVADevuelto() != null) {
+      addElement(doc, resumenFactura, "TotalIVADevuelto", campoFactura.getTotalIVADevuelto());
+    }
+
+    // Otros cargos
+    if (campoFactura.getTotalOtrosCargos() != null) {
+      addElement(doc, resumenFactura, "TotalOtrosCargos", campoFactura.getTotalOtrosCargos());
+    }
+
+    addElement(doc, resumenFactura, "TotalComprobante", campoFactura.getTotalComprobante());
   }
 
-  private void agregarReferencias(Document doc, Element parent, CCampoFactura campoFactura) {
+  private void procesarInformacionReferencia(Document doc, Element parent, String informacionReferenciaJson) {
     try {
-      if (campoFactura.getReferencia() != null && !campoFactura.getReferencia().isEmpty()) {
-        JsonNode referencias = objectMapper.readTree(campoFactura.getReferencia());
+      JsonNode referenciaArray = objectMapper.readTree(informacionReferenciaJson);
 
-        if (referencias.isArray()) {
-          for (JsonNode ref : referencias) {
-            Element informacionReferencia = doc.createElement("InformacionReferencia");
-            parent.appendChild(informacionReferencia);
+      if (referenciaArray.isArray()) {
+        for (JsonNode ref : referenciaArray) {
+          Element informacionReferencia = doc.createElement("InformacionReferencia");
+          parent.appendChild(informacionReferencia);
 
-            addElement(doc, informacionReferencia, "TipoDoc", ref.path("TipoDoc").asText());
-            addElement(doc, informacionReferencia, "Numero", ref.path("Numero").asText());
-            addElement(doc, informacionReferencia, "FechaEmision", ref.path("FechaEmision").asText());
-            addElement(doc, informacionReferencia, "Codigo", ref.path("Codigo").asText());
-            addElement(doc, informacionReferencia, "Razon", ref.path("Razon").asText());
-          }
+          addElement(doc, informacionReferencia, "TipoDoc", ref.path("TipoDoc").asText());
+          addElement(doc, informacionReferencia, "Numero", ref.path("Numero").asText());
+          addElement(doc, informacionReferencia, "FechaEmision", ref.path("FechaEmision").asText());
+          addElement(doc, informacionReferencia, "Codigo", ref.path("Codigo").asText());
+          addElement(doc, informacionReferencia, "Razon", ref.path("Razon").asText());
         }
       }
     } catch (Exception e) {
@@ -421,7 +483,6 @@ public class GeneraXmlImpl implements IGeneraXml {
   private void addElement(Document doc, Element parent, String name, String value) {
     if (value != null && !value.isEmpty()) {
       Element element = doc.createElement(name);
-      // No escapar manualmente - dejar que el DOM lo maneje
       element.appendChild(doc.createTextNode(value));
       parent.appendChild(element);
     }
@@ -446,42 +507,13 @@ public class GeneraXmlImpl implements IGeneraXml {
 
       transformer.transform(new DOMSource(doc), result);
 
-      // Convertir a string usando UTF-8
       String xmlString = baos.toString("UTF-8");
 
-      // Limpiar cualquier carácter no deseado al final
-      xmlString = xmlString.trim();
-
-      // Verificar que termine correctamente
-      if (!xmlString.endsWith(">")) {
-        log.error("XML mal formado, no termina con >");
-        throw new RuntimeException("XML generado está mal formado");
-      }
-
-      // Buscar el cierre del elemento raíz
-      String rootElementName = doc.getDocumentElement().getNodeName();
-      String closingTag = "</" + rootElementName + ">";
-      int closingIndex = xmlString.lastIndexOf(closingTag);
-
-      if (closingIndex == -1) {
-        log.error("No se encontró etiqueta de cierre para: {}", rootElementName);
-        throw new RuntimeException("XML mal formado - falta etiqueta de cierre");
-      }
-
-      // Asegurarse de que no haya contenido después del cierre
-      int endIndex = closingIndex + closingTag.length();
-      if (endIndex < xmlString.length()) {
-        String extraContent = xmlString.substring(endIndex).trim();
-        if (!extraContent.isEmpty()) {
-          log.warn("Contenido extra después del cierre del XML: '{}'", extraContent);
-          // Truncar el XML justo después del cierre
-          xmlString = xmlString.substring(0, endIndex);
-        }
-      }
-
-      // Log para debugging
-      log.debug("XML generado - Longitud: {} caracteres", xmlString.length());
+      // Log del XML generado para debug
       if (log.isDebugEnabled()) {
+        log.debug("XML generado completo: {}", xmlString);
+      } else {
+        log.info("XML generado - Tamaño: {} caracteres", xmlString.length());
         log.debug("Inicio del XML: {}",
             xmlString.length() > 200 ? xmlString.substring(0, 200) + "..." : xmlString);
         log.debug("Fin del XML: {}",
@@ -499,7 +531,7 @@ public class GeneraXmlImpl implements IGeneraXml {
   @Override
   public String GeneraXmlDocumentos(CCampoFactura paramCCampoFactura) {
     // Implementación para otros tipos de documentos
-    return GeneraXml(paramCCampoFactura, "" );
+    return GeneraXml(paramCCampoFactura, "");
   }
 
   @Override
