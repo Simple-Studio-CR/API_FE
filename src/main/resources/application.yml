@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: api-hacienda
   datasource:
     url: jdbc:mysql://simple-studio-do-user-17834356-0.g.db.ondigitalocean.com:25060/samyx_dev?allowPublicKeyRetrieval=true&useSSL=false&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=America/Costa_Rica
     username: doadmin
@@ -26,6 +28,13 @@ spring:
           timeout: 5000
           writetimeout: 5000
     debug: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: https://eureka-server-3nl8a.ondigitalocean.app/eureka/
+    register-with-eureka: true
+    fetch-registry: true
 
 server:
   port: 8080
