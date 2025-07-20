@@ -4,7 +4,6 @@ import org.apache.xml.security.Init;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.context.annotation.Bean;
 import org.springframework.boot.CommandLineRunner;
@@ -15,8 +14,6 @@ import java.security.Security;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableDiscoveryClient
-
 public class ApiFeApplication {
 
   private static final Logger log = LoggerFactory.getLogger(ApiFeApplication.class);
