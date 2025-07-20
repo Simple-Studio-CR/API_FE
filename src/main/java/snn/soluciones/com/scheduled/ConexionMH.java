@@ -8,6 +8,7 @@ import snn.soluciones.com.models.entity.MensajeReceptor;
 import snn.soluciones.com.service.IComprobantesElectronicosService;
 import snn.soluciones.com.service.IEmisorService;
 import snn.soluciones.com.service.IMensajeReceptorService;
+import snn.soluciones.com.service.ReportService;
 import snn.soluciones.com.service.storage.S3FileService;
 import snn.soluciones.com.util.DocumentTypeUtil;
 import snn.soluciones.com.util.EmailManagerUtil;
@@ -54,6 +55,9 @@ public class ConexionMH {
 
   @Autowired
   private EmailManagerUtil emailManagerUtil;
+
+  @Autowired
+  private ReportService reportService;
 
   @Autowired
   private ReportGeneratorUtil reportGeneratorUtil;
@@ -256,7 +260,7 @@ public class ConexionMH {
 
     // Enviar email si está aceptado y tiene email de distribución
     if (shouldSendAcceptanceEmail(estadoHacienda, ce)) {
-      sendAcceptanceEmail(ce);
+      sendAcceptanceEmailWithEmailManager(ce);
     }
 
     // Actualizar en base de datos
@@ -272,6 +276,50 @@ public class ConexionMH {
     );
 
     log.info("Documentos consultados con éxito para clave: {}", ce.getClave());
+  }
+
+  /**
+   * NUEVO MÉTODO: Envía email usando EmailManagerUtil
+   */
+  private void sendAcceptanceEmailWithEmailManager(ComprobantesElectronicos ce) {
+    try {
+      // Validar email
+      if (!emailManagerUtil.isValidEmail(ce.getEmailDistribucion())) {
+        log.warn("Email inválido para envío: {}", ce.getEmailDistribucion());
+        return;
+      }
+
+      // Generar PDF del documento
+      byte[] pdfBytes = null;
+      try {
+        pdfBytes = reportService.generateFacturaPdf(ce.getClave());
+      } catch (Exception e) {
+        log.error("Error generando PDF para {}: {}", ce.getClave(), e.getMessage());
+        // Continuar sin PDF si falla
+      }
+
+      // Obtener tipo de documento
+      String tipoDocumento = documentTypeUtil.tipoDocumento(ce.getTipoDocumento());
+
+      // Enviar email usando EmailManagerUtil
+      emailManagerUtil.sendInvoiceEmail(
+          ce.getClave(),
+          tipoDocumento,
+          ce.getEmisor().getId().toString(),
+          ce.getEmisor().getNombreComercial(),
+          ce.getEmailDistribucion(),
+          ce.getEmisor().getEmail(),
+          pdfBytes
+      );
+
+      log.info("Email de aceptación enviado exitosamente a: {} para clave: {}",
+          ce.getEmailDistribucion(), ce.getClave());
+
+    } catch (Exception e) {
+      log.error("Error enviando email de aceptación para clave {}: {}",
+          ce.getClave(), e.getMessage());
+      // No lanzar excepción para no afectar el proceso principal
+    }
   }
 
   /**
