@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 public class ConexionMH {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
+  private static final String XML_CLIENTES_PATH = "XmlClientes/";
 
   // ==================== SERVICIOS ORIGINALES ====================
   @Autowired
@@ -234,7 +235,7 @@ public class ConexionMH {
     String claveToQuery = buildQueryKey(ce);
 
     // Consultar estado
-    String pathXml = ce.getIdentificacion() + "/";
+    String pathXml = XML_CLIENTES_PATH + ce.getIdentificacion() + "/";
     String response = _sender.consultarEstadoDocumento(
         _endpoint, claveToQuery, _username, _password, _urlToken, pathXml, _clientId, ce.getIdentificacion()
     );
@@ -336,7 +337,7 @@ public class ConexionMH {
    * Construye la ruta del archivo XML
    */
   private String buildXmlPath(ComprobantesElectronicos ce) {
-    return ce.getIdentificacion() + "/" + ce.getNameXmlSign() + ".xml";
+    return XML_CLIENTES_PATH + ce.getIdentificacion() + "/" + ce.getNameXmlSign() + ".xml";
   }
   /**
    * Construye la clave para consulta según tipo de documento

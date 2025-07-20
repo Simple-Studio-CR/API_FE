@@ -495,7 +495,7 @@ public class Sender {
     respuestaXML = new String(Base64.decodeBase64(respuestaXML), StandardCharsets.UTF_8);
 
     // Guardar XML de respuesta
-    generateXml(pathUploadFilesApi, respuestaXML, res.get("clave") + "-respuesta-mh");
+    generateXml(pathUploadFilesApi, respuestaXML, res.get("clave") + "-respuesta-mh.xml");
 
     return "{\"resp\":\"" + res.get("ind-estado") + "\",\"fecha\":\"" + res.get("fecha") + "\",\"code\":\"" + statusCode + "\"}";
   }
