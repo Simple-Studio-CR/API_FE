@@ -185,7 +185,7 @@ public class ConexionMH {
               helper.setFrom(this.correoDistribucion);
               helper.setSubject(td + " - " + ce.getEmisor().getNombreComercial());
               helper.setText(msj, true);
-              helper.addAttachment(ce.getClave() + "-respuesta-mh.xml", (InputStreamSource)file_1);
+              helper.addAttachment(ce.getClave() + "-respuesta-mh.xml", file_1);
               this.emailSender.send(message);
               this.log.info("Se envío un mail de notificación de error a: " + ce.getEmisor().getEmailNotificacion());
               estadoHacienda = m.path("resp").asText();
@@ -256,9 +256,9 @@ public class ConexionMH {
         String file2 = this.pathUploadFilesApi + emisor + "/" + clave + "-factura-sign.xml";
         FileSystemResource file_1 = new FileSystemResource(new File(file1));
         FileSystemResource file_2 = new FileSystemResource(new File(file2));
-        helper.addAttachment("" + clave + "-respuesta-mh.xml", file_1, "application/xml");
-        helper.addAttachment("" + clave + "-factura-sign.xml", file_2, "application/xml");
-        helper.addAttachment("" + clave + "-factura.pdf", byteArrayDataSource);
+        helper.addAttachment(clave + "-respuesta-mh.xml", file_1, "application/xml");
+        helper.addAttachment(clave + "-factura-sign.xml", file_2, "application/xml");
+        helper.addAttachment(clave + "-factura.pdf", byteArrayDataSource);
         try {
           this.emailSender.send(message);
           this.log.info("Se envío un mail a " + emailTo);
