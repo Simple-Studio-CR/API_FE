@@ -64,15 +64,17 @@ public class Sender {
   private int timeoutMH = 35;
   
   private final Logger log = LoggerFactory.getLogger(getClass());
-  
+
   private void crearToken(String username, String password, String _urlToken, String _clientId, String emisorToken, String accion, String refreshToken) throws Exception {
     String responseString = null;
     CloseableHttpClient client = null;
     CloseableHttpResponse response = null;
+
     try {
       SSLContext sslContext = (new SSLContextBuilder()).loadTrustMaterial(null, (certificate, authType) -> true).build();
       client = HttpClients.custom().setSSLContext(sslContext).setSSLHostnameVerifier((HostnameVerifier)new NoopHostnameVerifier()).build();
       HttpPost httpPost = new HttpPost(_urlToken + "token");
+
       List<NameValuePair> urlParameters = new ArrayList<>();
       if (accion.equals("R")) {
         urlParameters.add(new BasicNameValuePair("grant_type", "refresh_token"));
@@ -81,50 +83,118 @@ public class Sender {
       } else {
         urlParameters.add(new BasicNameValuePair("grant_type", "password"));
         this.log.info("Generando un nuevo token...");
-      } 
+      }
+
       urlParameters.add(new BasicNameValuePair("client_id", _clientId));
-      urlParameters.add(new BasicNameValuePair("client_secret", ""));
-      urlParameters.add(new BasicNameValuePair("scope", ""));
       urlParameters.add(new BasicNameValuePair("username", username));
       urlParameters.add(new BasicNameValuePair("password", password));
+
       httpPost.addHeader("content-type", "application/x-www-form-urlencoded");
-      httpPost.setEntity((HttpEntity)new UrlEncodedFormEntity(urlParameters));
+      httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
+
       Long startTime = Long.valueOf(System.currentTimeMillis());
-      RequestConfig config = RequestConfig.custom().setConnectTimeout(this.timeoutMH * 1000).setConnectionRequestTimeout(this.timeoutMH * 1000).setSocketTimeout(this.timeoutMH * 1000).build();
+      RequestConfig config = RequestConfig.custom()
+          .setConnectTimeout(this.timeoutMH * 1000)
+          .setConnectionRequestTimeout(this.timeoutMH * 1000)
+          .setSocketTimeout(this.timeoutMH * 1000)
+          .build();
       httpPost.setConfig(config);
+
       response = client.execute((HttpUriRequest)httpPost);
       HttpEntity entity2 = response.getEntity();
       responseString = EntityUtils.toString(entity2, "UTF-8");
+
+      // Log del código de respuesta HTTP
+      int statusCode = response.getStatusLine().getStatusCode();
+      this.log.info("Código de respuesta HTTP: " + statusCode);
+      this.log.info("Respuesta completa del servidor: " + responseString);
+
       ObjectMapper objectMapper = new ObjectMapper();
-      Map<String, Object> res = (Map<String, Object>)objectMapper.readValue(responseString, new TypeReference<Map<String, Object>>() {
-          
-          });
+      Map<String, Object> res = null;
+
+      try {
+        res = (Map<String, Object>)objectMapper.readValue(responseString, new TypeReference<Map<String, Object>>() {});
+      } catch (Exception e) {
+        this.log.error("Error parseando respuesta JSON: " + responseString);
+        throw new Exception("Respuesta no es JSON válido: " + responseString);
+      }
+
       Long actualMenosInicio = Long.valueOf(System.currentTimeMillis() - startTime.longValue());
       Double duracionQuery = Double.valueOf(Double.valueOf(actualMenosInicio + "").doubleValue() / 1000.0D);
-      this.log.info("Duració generando token: " + duracionQuery);
-      TokenControl tc = new TokenControl();
-      TokenControl t = this._tokenControlService.findByEmisor(emisorToken);
-      if (res.get("error") != null && res.get("error").equals("invalid_grant")) {
-        this.log.info("Algo paso con el refreshToken entonces voy a borrar el token para que se genere uno nuevo");
-        logoutMh(username, password, _urlToken, _clientId, emisorToken, "", refreshToken);
-        this._tokenControlService.deleteTokenByEmisor(emisorToken);
-      } 
+      this.log.info("Duración generando token: " + duracionQuery);
+
+      // Verificar si hay error en la respuesta
+      if (res.containsKey("error")) {
+        String error = res.get("error") != null ? res.get("error").toString() : "unknown";
+        String errorDescription = res.containsKey("error_description") ?
+            (res.get("error_description") != null ? res.get("error_description").toString() : "No description") :
+            "No error description";
+
+        this.log.error("Error de autenticación: " + error + " - " + errorDescription);
+
+        if ("invalid_grant".equals(error)) {
+          this.log.info("Algo pasó con el refreshToken entonces voy a borrar el token para que se genere uno nuevo");
+          if (refreshToken != null && !refreshToken.isEmpty()) {
+            logoutMh(username, password, _urlToken, _clientId, emisorToken, "", refreshToken);
+          }
+          this._tokenControlService.deleteTokenByEmisor(emisorToken);
+        }
+        return; // Salir sin procesar más
+      }
+
+      // Verificar que tengamos los campos necesarios
+      if (!res.containsKey("access_token") || res.get("access_token") == null) {
+        this.log.error("Respuesta sin access_token. Campos disponibles: " + res.keySet());
+        throw new Exception("No se recibió access_token en la respuesta");
+      }
+
+      // Obtener valores con valores por defecto si no existen
+      String accessToken = res.get("access_token").toString();
+      String expiresIn = res.containsKey("expires_in") && res.get("expires_in") != null ?
+          res.get("expires_in").toString() : "3600";
+      String refreshTokenNew = res.containsKey("refresh_token") && res.get("refresh_token") != null ?
+          res.get("refresh_token").toString() : "";
+      String refreshExpiresIn = res.containsKey("refresh_expires_in") && res.get("refresh_expires_in") != null ?
+          res.get("refresh_expires_in").toString() : "0";
+
       Long horaCreacion = Long.valueOf(System.currentTimeMillis() / 1000L / 60L);
+
+      TokenControl t = this._tokenControlService.findByEmisor(emisorToken);
       if (t != null) {
-        this._tokenControlService.updateAccessToken(res.get("access_token").toString(), res.get("expires_in").toString(), horaCreacion, t.getId());
+        this._tokenControlService.updateAccessToken(accessToken, expiresIn, horaCreacion, t.getId());
+        this.log.info("Token actualizado exitosamente para emisor: " + emisorToken);
       } else {
+        TokenControl tc = new TokenControl();
         tc.setEmisor(emisorToken);
-        tc.setAccessToken(res.get("access_token").toString());
-        tc.setExpiresIn(res.get("expires_in").toString());
-        tc.setRefreshTokens(res.get("refresh_token").toString());
-        tc.setRefreshExpiresIn(res.get("refresh_expires_in").toString());
+        tc.setAccessToken(accessToken);
+        tc.setExpiresIn(expiresIn);
+        tc.setRefreshTokens(refreshTokenNew);
+        tc.setRefreshExpiresIn(refreshExpiresIn);
         tc.setHoraCreacionToken(horaCreacion);
         tc.setHoraCreacionRefreshToken(Long.valueOf(System.currentTimeMillis() / 1000L / 60L));
         this._tokenControlService.save(tc);
-      } 
+        this.log.info("Nuevo token creado exitosamente para emisor: " + emisorToken);
+      }
+
     } catch (Exception e) {
-      this.log.info("Mensaje generado por el clase Sender: " + e.getMessage());
-    } 
+      this.log.error("Error en crearToken para emisor " + emisorToken + ": " + e.getMessage(), e);
+      // No re-lanzar la excepción para que el proceso continúe
+    } finally {
+      if (response != null) {
+        try {
+          response.close();
+        } catch (Exception e) {
+          this.log.error("Error cerrando response: " + e.getMessage());
+        }
+      }
+      if (client != null) {
+        try {
+          client.close();
+        } catch (Exception e) {
+          this.log.error("Error cerrando client: " + e.getMessage());
+        }
+      }
+    }
   }
   
   private void logoutMh(String username, String password, String _urlToken, String _clientId, String emisorToken, String accion, String refreshToken) throws Exception {
@@ -148,49 +218,65 @@ public class Sender {
       this.log.info("Error generado por el metodo logoutMh: " + e.getMessage());
     } 
   }
-  
+
   private String getToken(String username, String password, String _urlToken, String _clientId, String emisorToken) throws Exception {
     String resp = null;
-    TokenControl t = this._tokenControlService.findByEmisor(emisorToken);
-    if (t != null) {
-      Long minutosVidaToken = Long.valueOf(t.getHoraCreacionToken().longValue() + Long.valueOf(t.getExpiresIn()).longValue() / 60L);
-      this.log.info("Vida del accessToken " + minutosVidaToken);
-      Long diferencia = Long.valueOf(minutosVidaToken.longValue() - System.currentTimeMillis() / 1000L / 60L);
-      this.log.info("Diferiencia: " + diferencia);
-      if (diferencia.longValue() <= 0L) {
-        minutosVidaToken = Long.valueOf(t.getHoraCreacionRefreshToken().longValue() + Long.valueOf(t.getRefreshExpiresIn()).longValue() / 60L);
-        diferencia = Long.valueOf(minutosVidaToken.longValue() - System.currentTimeMillis() / 1000L / 60L);
-        this.log.info("Diferencia del refreshToken: " + diferencia);
+
+    try {
+      TokenControl t = this._tokenControlService.findByEmisor(emisorToken);
+
+      if (t != null) {
+        Long minutosVidaToken = Long.valueOf(t.getHoraCreacionToken().longValue() + Long.valueOf(t.getExpiresIn()).longValue() / 60L);
+        this.log.info("Vida del accessToken " + minutosVidaToken);
+        Long diferencia = Long.valueOf(minutosVidaToken.longValue() - System.currentTimeMillis() / 1000L / 60L);
+        this.log.info("Diferencia: " + diferencia);
+
         if (diferencia.longValue() <= 0L) {
-          this.log.info("______________Eliminando el token viejo______________");
-          this._tokenControlService.deleteTokenByEmisor(emisorToken);
-          this.log.info("______________Genero un nuevo token, el refresh token expiro______________");
-          crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
+          minutosVidaToken = Long.valueOf(t.getHoraCreacionRefreshToken().longValue() + Long.valueOf(t.getRefreshExpiresIn()).longValue() / 60L);
+          diferencia = Long.valueOf(minutosVidaToken.longValue() - System.currentTimeMillis() / 1000L / 60L);
+          this.log.info("Diferencia del refreshToken: " + diferencia);
+
+          if (diferencia.longValue() <= 0L) {
+            this.log.info("______________Eliminando el token viejo______________");
+            this._tokenControlService.deleteTokenByEmisor(emisorToken);
+            this.log.info("______________Genero un nuevo token, el refresh token expiró______________");
+            crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
+          } else {
+            this.log.info("______________Refresco el token con el refreshToken______________");
+            crearToken(username, password, _urlToken, _clientId, emisorToken, "R", t.getRefreshTokens());
+          }
         } else {
-          this.log.info("______________Refresco el token con el refreshToken______________");
-          crearToken(username, password, _urlToken, _clientId, emisorToken, "R", t.getRefreshTokens());
-        } 
+          minutosVidaToken = Long.valueOf(t.getHoraCreacionRefreshToken().longValue() + Long.valueOf(t.getRefreshExpiresIn()).longValue() / 60L);
+          diferencia = Long.valueOf(minutosVidaToken.longValue() - System.currentTimeMillis() / 1000L / 60L);
+          if (diferencia.longValue() <= 0L) {
+            this.log.info("______________Eliminando el token viejo______________");
+            this._tokenControlService.deleteTokenByEmisor(emisorToken);
+            this.log.info("______________Generando un nuevo token______________");
+            crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
+          } else {
+            this.log.info("Sigo usando el mismo token");
+          }
+        }
       } else {
-        minutosVidaToken = Long.valueOf(t.getHoraCreacionRefreshToken().longValue() + Long.valueOf(t.getRefreshExpiresIn()).longValue() / 60L);
-        diferencia = Long.valueOf(minutosVidaToken.longValue() - System.currentTimeMillis() / 1000L / 60L);
-        if (diferencia.longValue() <= 0L) {
-          this.log.info("______________Eliminando el token viejo______________");
-          this._tokenControlService.deleteTokenByEmisor(emisorToken);
-          this.log.info("______________Generando un nuevo token______________");
-          crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
-        } else {
-          this.log.info("Sigo usando el mismo token");
-        } 
-      } 
-    } else {
-      crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
-    } 
-    TokenControl tF = this._tokenControlService.findByEmisor(emisorToken);
-    if (tF != null) {
-      resp = tF.getAccessToken();
-    } else {
+        this.log.info("No existe token para emisor " + emisorToken + ", creando uno nuevo");
+        crearToken(username, password, _urlToken, _clientId, emisorToken, "N", "");
+      }
+
+      // Verificar si se creó/actualizó el token correctamente
+      TokenControl tF = this._tokenControlService.findByEmisor(emisorToken);
+      if (tF != null && tF.getAccessToken() != null && !tF.getAccessToken().isEmpty()) {
+        resp = tF.getAccessToken();
+        this.log.info("Token obtenido exitosamente para emisor: " + emisorToken);
+      } else {
+        this.log.error("No se pudo obtener token para emisor: " + emisorToken);
+        resp = "Error con el Token";
+      }
+
+    } catch (Exception e) {
+      this.log.error("Error en getToken: " + e.getMessage(), e);
       resp = "Error con el Token";
-    } 
+    }
+
     return resp;
   }
   

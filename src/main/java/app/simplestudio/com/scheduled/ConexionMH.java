@@ -19,14 +19,15 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.mail.MessagingException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import javax.mail.util.ByteArrayDataSource;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
 import javax.sql.DataSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
+import lombok.extern.slf4j.Slf4j;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
 import org.slf4j.Logger;
@@ -43,62 +44,61 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
 @Component
+@Slf4j
 public class ConexionMH {
-  private final Logger log = LoggerFactory.getLogger(getClass());
-  
   @Autowired
   private IComprobantesElectronicosService _comprobantesElectronicosService;
-  
+
   @Autowired
   private IEmisorService _emisorService;
-  
+
   @Value("${path.upload.files.api}")
   private String pathUploadFilesApi;
-  
+
   @Value("${endpoint.prod}")
   private String endpointProd;
-  
+
   @Value("${endpoint.stag}")
   private String endpointStag;
-  
+
   @Value("${token.prod}")
   private String tokenProd;
-  
+
   @Value("${token.stag}")
   private String tokenStag;
-  
+
   @Autowired
   private Sender _sender;
-  
+
   @Autowired
   public JavaMailSender emailSender;
-  
+
   @Autowired
   public DataSource dataSource;
-  
+
   @Autowired
   private IMensajeReceptorService _mensajeReceptorService;
-  
+
   @Value("${correo.de.distribucion}")
   private String correoDistribucion;
-  
+
   @Value("${url.qr}")
   private String urlQr;
-  
+
   private String _endpoint;
-  
+
   private String _username;
-  
+
   private String _password;
-  
+
   private String _urlToken;
-  
+
   private String _clientId;
-  
+
   @Scheduled(fixedDelay = 60000L)
   public void EnviarComprobantesMH() {
     try {
-      this.log.info("Preparando el entorno para enviar los documentos a MH");
+      log.info("Preparando el entorno para enviar los documentos a MH");
       ObjectMapper objectMapper = new ObjectMapper();
       List<ComprobantesElectronicos> listComprobantes = this._comprobantesElectronicosService.findAllForSend();
       for (ComprobantesElectronicos ce : listComprobantes) {
@@ -111,7 +111,7 @@ public class ConexionMH {
           this._endpoint = this.endpointStag;
           this._urlToken = this.tokenStag;
           this._clientId = "api-stag";
-        } 
+        }
         this._username = e.getUserApi();
         this._password = e.getPwApi();
         String pathXml = this.pathUploadFilesApi + ce.getIdentificacion() + "/" + ce.getNameXmlSign() + ".xml";
@@ -123,18 +123,18 @@ public class ConexionMH {
           this._comprobantesElectronicosService.updateComprobantesElectronicosByClaveAndEmisor(m
               .path("resp").asText(), m.path("headers").asText(), ce.getClave(), ce.getIdentificacion());
           continue;
-        } 
-        this.log.info("El xml del documento " + ce.getClave() + " no existe!!!");
-      } 
-      this.log.info("Finalizo el proceso de envío");
+        }
+        log.info("El xml del documento " + ce.getClave() + " no existe!!!");
+      }
+      log.info("Finalizo el proceso de envío");
     } catch (Exception e) {
-      this.log.info("Menaje de error generado por el envío a MH: " + e.getMessage());
-    } 
+      log.info("Menaje de error generado por el envío a MH: " + e.getMessage());
+    }
   }
-  
+
   @Scheduled(fixedDelay = 120000L)
   public void ConsultaComprobantesMH() {
-    this.log.info("Preparando el entorno para consultar los documentos a MH");
+    log.info("Preparando el entorno para consultar los documentos a MH");
     ObjectMapper objectMapper = new ObjectMapper();
     String nameXmlAcceptacion = "";
     List<ComprobantesElectronicos> listComprobantes = this._comprobantesElectronicosService.findAllForCheckStatus();
@@ -148,7 +148,7 @@ public class ConexionMH {
           this._endpoint = this.endpointStag;
           this._urlToken = this.tokenStag;
           this._clientId = "api-stag";
-        } 
+        }
         this._username = ce.getEmisor().getUserApi();
         this._password = ce.getEmisor().getPwApi();
         String clave = ce.getClave();
@@ -156,75 +156,73 @@ public class ConexionMH {
         if (tipoDocumento.equals("05") || tipoDocumento.equals("06") || tipoDocumento.equals("07")) {
           MensajeReceptor mr = this._mensajeReceptorService.findByClave(clave);
           clave = mr.getClaveDocumentoEmisor() + "-" + mr.getClave().substring(21, 41);
-        } 
+        }
         String pathXml = this.pathUploadFilesApi + ce.getIdentificacion() + "/";
         String resp = this._sender.consultarEstadoDocumento(this._endpoint, clave, this._username, this._password, this._urlToken, pathXml, this._clientId, ce
             .getIdentificacion());
         JsonNode m = objectMapper.readTree(resp);
         String estadoHacienda = m.path("resp").asText();
-        int reconsultas = (ce.getReconsultas() + "" != null) ? 1 : ce.getReconsultas().intValue();
+        int reconsultas = 1;
         if (m.path("resp").asText().equalsIgnoreCase("rechazado")) {
           String td = tipoDocumento(ce.getTipoDocumento());
           String file1 = this.pathUploadFilesApi + ce.getIdentificacion() + "/" + clave + "-respuesta-mh.xml";
           FileSystemResource file_1 = new FileSystemResource(new File(file1));
-          if (reconsultas <= 10) {
-            XPath xPath = XPathFactory.newInstance().newXPath();
-            Document xml = XmlHelper.getDocument(file1);
-            NodeList nodes = (NodeList)xPath.evaluate("/MensajeHacienda/DetalleMensaje", xml.getDocumentElement(), XPathConstants.NODESET);
-            if (nodes != null && nodes.item(0).getTextContent().equals("La firma del comprobante electrónico no es válida")) {
-              estadoHacienda = "";
-            } else {
-              MimeMessage message = this.emailSender.createMimeMessage();
-              MimeMessageHelper helper = new MimeMessageHelper(message, true);
-              String msj = null;
-              msj = "<p style=\"font-family: Arial;\">Estimado cliente,</p>";
-              msj = msj + "<p style=\"font-family: Arial;\">El comprobante de <b>" + td + "</b> con el número de consecutivo <b>" + ce.getClave().substring(21, 41) + "</b>, presenta los siguientes errores, ver documento adjunto.</b></p>";
-              msj = msj + "<p style=\"font-family: Arial;\">Saludos,</p>";
-              msj = msj + "<p style=\"font-family: Arial;\"><b>" + ce.getEmisor().getNombreComercial() + "</b></p>";
-              helper.setTo(ce.getEmisor().getEmailNotificacion());
-              helper.setFrom(this.correoDistribucion);
-              helper.setSubject(td + " - " + ce.getEmisor().getNombreComercial());
-              helper.setText(msj, true);
-              helper.addAttachment(ce.getClave() + "-respuesta-mh.xml", (InputStreamSource)file_1);
-              this.emailSender.send(message);
-              this.log.info("Se envío un mail de notificación de error a: " + ce.getEmisor().getEmailNotificacion());
-              estadoHacienda = m.path("resp").asText();
-            } 
-            this.log.info("Error generado: " + nodes.item(0).getTextContent());
-          } 
+          XPath xPath = XPathFactory.newInstance().newXPath();
+          Document xml = XmlHelper.getDocument(file1);
+          NodeList nodes = (NodeList)xPath.evaluate("/MensajeHacienda/DetalleMensaje", xml.getDocumentElement(), XPathConstants.NODESET);
+          if (nodes != null && nodes.item(0).getTextContent().equals("La firma del comprobante electrónico no es válida")) {
+            estadoHacienda = "";
+          } else {
+            MimeMessage message = this.emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            String msj = null;
+            msj = "<p style=\"font-family: Arial;\">Estimado cliente,</p>";
+            msj = msj + "<p style=\"font-family: Arial;\">El comprobante de <b>" + td + "</b> con el número de consecutivo <b>" + ce.getClave().substring(21, 41) + "</b>, presenta los siguientes errores, ver documento adjunto.</b></p>";
+            msj = msj + "<p style=\"font-family: Arial;\">Saludos,</p>";
+            msj = msj + "<p style=\"font-family: Arial;\"><b>" + ce.getEmisor().getNombreComercial() + "</b></p>";
+            helper.setTo(ce.getEmisor().getEmailNotificacion());
+            helper.setFrom(this.correoDistribucion);
+            helper.setSubject(td + " - " + ce.getEmisor().getNombreComercial());
+            helper.setText(msj, true);
+            helper.addAttachment(ce.getClave() + "-respuesta-mh.xml", (InputStreamSource)file_1);
+            this.emailSender.send(message);
+            log.info("Se envío un mail de notificación de error a: " + ce.getEmisor().getEmailNotificacion());
+            estadoHacienda = m.path("resp").asText();
+          }
+          log.info("Error generado: " + nodes.item(0).getTextContent());
           reconsultas++;
-        } 
-        if (m.path("resp").asText().equalsIgnoreCase("aceptado") && ce.getEmailDistribucion() != null && 
+        }
+        if (m.path("resp").asText().equalsIgnoreCase("aceptado") && ce.getEmailDistribucion() != null &&
           !ce.getEmailDistribucion().equals("")) {
           estadoHacienda = m.path("resp").asText();
-          this.log.info("Se envío un mail de ACEPTACIÓN a: " + ce.getEmailDistribucion());
+          log.info("Se envío un mail de ACEPTACIÓN a: " + ce.getEmailDistribucion());
           enviaFacturas(ce.getTipoDocumento(), clave, ce.getIdentificacion(), ce
               .getEmisor().getNombreComercial(), ce.getEmailDistribucion(), ce.getEmisor().getEmail(), ce
               .getEmisor().getLogoEmpresa(), ce.getEmisor().getNataFactura(), ce
               .getEmisor().getDetalleEnFactura1(), ce.getEmisor().getDetalleEnFactura2());
-        } 
+        }
         nameXmlAcceptacion = clave + "-respuesta-mh.xml";
         if (estadoHacienda != null && estadoHacienda.equalsIgnoreCase("null"))
-          estadoHacienda = ""; 
+          estadoHacienda = "";
         this._comprobantesElectronicosService.updateComprobantesElectronicosByClaveAndEmisor(nameXmlAcceptacion, m
             .path("fecha").asText(), estadoHacienda, m.path("headers").asText(), reconsultas, ce
             .getClave(), ce.getIdentificacion());
-        this.log.info("Documentos consultados con éxito.");
+        log.info("Documentos consultados con éxito.");
       } catch (Exception e) {
         e.printStackTrace();
-        this.log.info("Hacienda esta presentando problemas.");
-      } 
-    } 
+        log.info("Hacienda esta presentando problemas.");
+      }
+    }
   }
-  
-  public void enviaFacturas(String tipoDocumento, String clave, String emisor, String nombreEmpresa, String emailTo, String emailEmpresa, String logo, String notaFactura, String detalleFactura1, String detalleFactura2) throws JRException, IOException, SQLException, MessagingException {
+
+  public void enviaFacturas(String tipoDocumento, String clave, String emisor, String nombreEmpresa, String emailTo, String emailEmpresa, String logo, String notaFactura, String detalleFactura1, String detalleFactura2) throws IOException, SQLException, MessagingException {
     Connection db = this.dataSource.getConnection();
     InputStream reportfile = getClass().getResourceAsStream("/facturas.jasper");
-    if (logo != null && !logo.equals("") && logo.length() > 0) {
+    if (logo != null && !logo.isEmpty()) {
       logo = this.pathUploadFilesApi + "logo/" + logo;
     } else {
       logo = this.pathUploadFilesApi + "logo/default.png";
-    } 
+    }
     URL base = getClass().getResource("/");
     String baseUrl = base.toString();
     String td = tipoDocumento(tipoDocumento);
@@ -258,50 +256,37 @@ public class ConexionMH {
         FileSystemResource file_2 = new FileSystemResource(new File(file2));
         helper.addAttachment("" + clave + "-respuesta-mh.xml", (InputStreamSource)file_1, "application/xml");
         helper.addAttachment("" + clave + "-factura-sign.xml", (InputStreamSource)file_2, "application/xml");
-        helper.addAttachment("" + clave + "-factura.pdf", (javax.activation.DataSource)byteArrayDataSource);
+        helper.addAttachment("" + clave + "-factura.pdf", (jakarta.activation.DataSource)byteArrayDataSource);
         try {
           this.emailSender.send(message);
-          this.log.info("Se envío un mail a " + emailTo);
+          log.info("Se envío un mail a {}", emailTo);
         } catch (Exception e) {
-          this.log.info("No se pudo enviar el correo a " + emailTo);
-        } 
-      } 
+          log.info("No se pudo enviar el correo a {}", emailTo);
+        }
+      }
     } catch (JRException ex) {
       System.out.println("Error del reporte: " + ex.getMessage());
     } finally {
       reportfile.close();
       try {
         if (db != null)
-          db.close(); 
+          db.close();
       } catch (SQLException e) {
         System.out.println("Error: desconectando la base de datos.");
-      } 
-    } 
+      }
+    }
   }
-  
+
   public String tipoDocumento(String td) {
-    String resp = "";
-    switch (td) {
-      case "FE":
-        resp = "Factura Electrónica";
-        break;
-      case "ND":
-        resp = "Nota de débito Electrónica";
-        break;
-      case "NC":
-        resp = "Nota de crédito Electrónica";
-        break;
-      case "TE":
-        resp = "Tiquete Electrónico";
-        break;
-      case "FEC":
-        resp = "Factura Electrónica Compra";
-        break;
-      case "FEE":
-        resp = "Factura Electrónica Exportación";
-        break;
-    } 
-    return resp;
+    return switch (td) {
+      case "FE" -> "Factura Electrónica";
+      case "ND" -> "Nota de débito Electrónica";
+      case "NC" -> "Nota de crédito Electrónica";
+      case "TE" -> "Tiquete Electrónico";
+      case "FEC" -> "Factura Electrónica Compra";
+      case "FEE" -> "Factura Electrónica Exportación";
+      default -> "";
+    };
   }
 }
 

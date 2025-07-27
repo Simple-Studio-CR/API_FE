@@ -18,14 +18,12 @@ import app.simplestudio.com.models.entity.ItemFactura;
 import app.simplestudio.com.service.IComprobantesElectronicosService;
 import app.simplestudio.com.service.IEmisorService;
 import app.simplestudio.com.service.IFacturaService;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,11 +101,11 @@ public class NotaDebitoNotaCreditoAceptadasController {
   public ResponseEntity<?> getFactura(@RequestBody String j) throws Exception {
     Map<String, Object> response = new HashMap<>();
     ObjectMapper objectMapper = new ObjectMapper();
-    JsonNode m = null;
+    JsonNode m;
     m = objectMapper.readTree(j);
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     String fechaEmision = format.format(new Date()) + "-06:00";
-    Long consecutivoCe = null;
+    Long consecutivoCe;
     Long consecutivoEm = null;
     String tipoDocumento = m.path("tipoDocumento").asText();
     String situacion = m.path("situacion").asText();
@@ -117,16 +115,16 @@ public class NotaDebitoNotaCreditoAceptadasController {
     String razon = m.path("razon").asText();
     String emisor = m.path("emisor").asText();
     String clave = m.path("numero").asText();
-    String fechaEmisionFactura = "";
-    if (situacion != null && situacion.length() > 0) {
-      if (sucursal != null && sucursal.length() > 0) {
-        if (terminal != null && terminal.length() > 0)
+    String fechaEmisionFactura;
+    if (situacion != null && !situacion.isEmpty()) {
+      if (sucursal != null && !sucursal.isEmpty()) {
+        if (terminal != null && !terminal.isEmpty())
           try {
             String tokenAccess = m.path("tokenAccess").asText().trim();
             Emisor e = this._emisorService.findEmisorByIdentificacion(emisor, tokenAccess);
             if (e != null) {
               this.log.info("El emisor existe es valido");
-              if ((tipoDocumento != null && tipoDocumento.length() > 0 && tipoDocumento.equalsIgnoreCase("ND")) || tipoDocumento.equalsIgnoreCase("NC")) {
+              if ((tipoDocumento != null && tipoDocumento.equalsIgnoreCase("ND")) || tipoDocumento.equalsIgnoreCase("NC")) {
                 String jsonFinal;
                 if (e.getAmbiente().equals("prod")) {
                   this._endpoint = this.endpointProd;
@@ -143,27 +141,24 @@ public class NotaDebitoNotaCreditoAceptadasController {
                 this._password = e.getPwApi();
                 CTerminal csu = this._emisorService.findBySecuenciaByTerminal(e.getId(), m.path("sucursal").asInt(), m.path("terminal").asInt());
                 if (csu != null) {
-                  switch (tipoDocumento) {
-                    case "NC":
-                      consecutivoEm = csu.getConsecutivoNc();
-                      break;
-                    case "ND":
-                      consecutivoEm = csu.getConsecutivoNd();
-                      break;
-                  } 
+                  consecutivoEm = switch (tipoDocumento) {
+                    case "NC" -> csu.getConsecutivoNc();
+                    case "ND" -> csu.getConsecutivoNd();
+                    default -> consecutivoEm;
+                  };
                 } else {
-                  response.put("response", Integer.valueOf(401));
+                  response.put("response", 401);
                   response.put("msj", "La sucursal o la terminal no existen.");
-                  return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                  return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                 } 
                 CCampoFactura c = new CCampoFactura();
                 ComprobantesElectronicos ce = this._comprobantesElectronicosService.findByEmisor(emisor, tipoDocumento.trim(), m.path("sucursal").asInt(), m.path("terminal").asInt(), e.getAmbiente());
                 if (ce != null) {
-                  consecutivoCe = Long.valueOf(ce.getConsecutivo().longValue() + 1L);
+                  consecutivoCe = ce.getConsecutivo() + 1L;
                 } else {
-                  consecutivoCe = Long.valueOf(Long.parseLong("1"));
+                  consecutivoCe = Long.parseLong("1");
                 } 
-                Long consecutivoFinal = (consecutivoCe.longValue() < consecutivoEm.longValue()) ? consecutivoEm : consecutivoCe;
+                Long consecutivoFinal = (consecutivoCe < consecutivoEm) ? consecutivoEm : consecutivoCe;
                 String generaClave = this._sender.getClave(tipoDocumento, "0" + e.getTipoDeIdentificacion().getId(), emisor, m
                     .path("situacion").asText(), e.getCodigoPais(), consecutivoFinal
                     .toString(), this._funcionesService.getCodigoSeguridad(8), m
@@ -207,132 +202,174 @@ public class NotaDebitoNotaCreditoAceptadasController {
                 c.setEmisorCodPaisFax(e.getCodigoPais());
                 c.setEmisorFax(e.getFax());
                 c.setEmisorEmail(e.getEmail());
-                JsonNode detalleLineaNode = null;
+                JsonNode detalleLineaNode;
                 String claveDocumentoReferencia = "";
-                if (m.path("informacionReferencia").path("numero").asText() != null && m.path("informacionReferencia").path("numero").asText().length() > 0) {
+                if (m.path("informacionReferencia").path("numero").asText() != null && !m.path(
+                    "informacionReferencia").path("numero").asText().isEmpty()) {
                   claveDocumentoReferencia = m.path("informacionReferencia").path("numero").asText();
-                } else if (m.path("numero").asText() != null && m.path("numero").asText().length() > 0) {
+                } else if (m.path("numero").asText() != null && !m.path("numero").asText()
+                    .isEmpty()) {
                   claveDocumentoReferencia = m.path("numero").asText();
                 } 
                 Factura f = this._facturaService.findFacturaByClave(claveDocumentoReferencia);
                 int i = 1;
-                String tmp = "";
+                StringBuilder tmp = new StringBuilder();
                 String ftmp = "";
-                String impuestosTmp = "";
+                StringBuilder impuestosTmp = new StringBuilder();
                 if (f != null) {
                   fechaEmisionFactura = f.getFechaEmision();
                   for (ItemFactura ifa : f.getItems()) {
-                    tmp = tmp + "\"" + i++ + "\":";
-                    tmp = tmp + "{";
-                    tmp = tmp + "\"numeroLinea\":\"" + ifa.getNumeroLinea() + "\",";
-                    if (ifa.getPartidaArancelaria() != null && !ifa.getPartidaArancelaria().equals(""))
-                      tmp = tmp + "\"partidaArancelaria\":\"" + procesarTexto(ifa.getPartidaArancelaria()) + "\","; 
-                    tmp = tmp + "\"codigo\":\"" + ifa.getCodigo() + "\",";
-                    tmp = tmp + "\"codigoComercial\":{";
-                    if (ifa.getCodigoComercialTipo() != null && ifa.getCodigoComercialTipo().length() > 0) {
-                      tmp = tmp + "\"0\":{";
-                      tmp = tmp + "\"tipo\":\"" + ifa.getCodigoComercialTipo() + "\",";
-                      tmp = tmp + "\"codigo\":\"" + procesarTexto(ifa.getCodigoComercialCodigo()) + "\"";
-                      tmp = tmp + "}";
+                    tmp.append("\"").append(i++).append("\":");
+                    tmp.append("{");
+                    tmp.append("\"numeroLinea\":\"").append(ifa.getNumeroLinea()).append("\",");
+                    if (ifa.getPartidaArancelaria() != null && !ifa.getPartidaArancelaria()
+                        .isEmpty())
+                      tmp.append("\"partidaArancelaria\":\"")
+                          .append(procesarTexto(ifa.getPartidaArancelaria())).append("\",");
+                    tmp.append("\"codigo\":\"").append(ifa.getCodigo()).append("\",");
+                    tmp.append("\"codigoComercial\":{");
+                    if (ifa.getCodigoComercialTipo() != null && !ifa.getCodigoComercialTipo()
+                        .isEmpty()) {
+                      tmp.append("\"0\":{");
+                      tmp.append("\"tipo\":\"").append(ifa.getCodigoComercialTipo()).append("\",");
+                      tmp.append("\"codigo\":\"")
+                          .append(procesarTexto(ifa.getCodigoComercialCodigo())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getCodigoComercialTipo2() != null && ifa.getCodigoComercialTipo2().length() > 0) {
-                      tmp = tmp + ",\"1\":{";
-                      tmp = tmp + "\"tipo\":\"" + ifa.getCodigoComercialTipo2() + "\",";
-                      tmp = tmp + "\"codigo\":\"" + procesarTexto(ifa.getCodigoComercialCodigo2()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getCodigoComercialTipo2() != null && !ifa.getCodigoComercialTipo2()
+                        .isEmpty()) {
+                      tmp.append(",\"1\":{");
+                      tmp.append("\"tipo\":\"").append(ifa.getCodigoComercialTipo2()).append("\",");
+                      tmp.append("\"codigo\":\"")
+                          .append(procesarTexto(ifa.getCodigoComercialCodigo2())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getCodigoComercialTipo3() != null && ifa.getCodigoComercialTipo3().length() > 0) {
-                      tmp = tmp + ",\"2\":{";
-                      tmp = tmp + "\"tipo\":\"" + ifa.getCodigoComercialTipo3() + "\",";
-                      tmp = tmp + "\"codigo\":\"" + procesarTexto(ifa.getCodigoComercialCodigo3()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getCodigoComercialTipo3() != null && !ifa.getCodigoComercialTipo3()
+                        .isEmpty()) {
+                      tmp.append(",\"2\":{");
+                      tmp.append("\"tipo\":\"").append(ifa.getCodigoComercialTipo3()).append("\",");
+                      tmp.append("\"codigo\":\"")
+                          .append(procesarTexto(ifa.getCodigoComercialCodigo3())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getCodigoComercialTipo4() != null && ifa.getCodigoComercialTipo4().length() > 0) {
-                      tmp = tmp + ",\"3\":{";
-                      tmp = tmp + "\"tipo\":\"" + ifa.getCodigoComercialTipo4() + "\",";
-                      tmp = tmp + "\"codigo\":\"" + procesarTexto(ifa.getCodigoComercialCodigo4()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getCodigoComercialTipo4() != null && !ifa.getCodigoComercialTipo4()
+                        .isEmpty()) {
+                      tmp.append(",\"3\":{");
+                      tmp.append("\"tipo\":\"").append(ifa.getCodigoComercialTipo4()).append("\",");
+                      tmp.append("\"codigo\":\"")
+                          .append(procesarTexto(ifa.getCodigoComercialCodigo4())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getCodigoComercialTipo5() != null && ifa.getCodigoComercialTipo5().length() > 0) {
-                      tmp = tmp + ",\"4\":{";
-                      tmp = tmp + "\"tipo\":\"" + ifa.getCodigoComercialTipo5() + "\",";
-                      tmp = tmp + "\"codigo\":\"" + procesarTexto(ifa.getCodigoComercialCodigo5()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getCodigoComercialTipo5() != null && !ifa.getCodigoComercialTipo5()
+                        .isEmpty()) {
+                      tmp.append(",\"4\":{");
+                      tmp.append("\"tipo\":\"").append(ifa.getCodigoComercialTipo5()).append("\",");
+                      tmp.append("\"codigo\":\"")
+                          .append(procesarTexto(ifa.getCodigoComercialCodigo5())).append("\"");
+                      tmp.append("}");
                     } 
-                    tmp = tmp + "},";
-                    tmp = tmp + "\"cantidad\":\"" + ifa.getCantidad() + "\",";
-                    tmp = tmp + "\"unidadMedida\":\"" + ifa.getUnidadMedida() + "\",";
-                    tmp = tmp + "\"unidadMedidaComercial\":\"" + procesarTexto(ifa.getUnidadMedidaComercial()) + "\",";
-                    tmp = tmp + "\"detalle\":\"" + procesarTexto(ifa.getDetalle()) + "\",";
-                    tmp = tmp + "\"precioUnitario\":\"" + ifa.getPrecioUnitario() + "\",";
-                    tmp = tmp + "\"montoTotal\":\"" + ifa.getMontoTotal() + "\",";
-                    tmp = tmp + "\"descuentos\":{  ";
-                    if (ifa.getMontoDescuento() != null && ifa.getMontoDescuento().toString().length() > 0) {
-                      tmp = tmp + "\"0\":{";
-                      tmp = tmp + "\"montoDescuento\":\"" + ifa.getMontoDescuento() + "\",";
-                      tmp = tmp + "\"naturalezaDescuento\":\"" + procesarTexto(ifa.getNaturalezaDescuento()) + "\"";
-                      tmp = tmp + "}";
+                    tmp.append("},");
+                    tmp.append("\"cantidad\":\"").append(ifa.getCantidad()).append("\",");
+                    tmp.append("\"unidadMedida\":\"").append(ifa.getUnidadMedida()).append("\",");
+                    tmp.append("\"unidadMedidaComercial\":\"")
+                        .append(procesarTexto(ifa.getUnidadMedidaComercial())).append("\",");
+                    tmp.append("\"detalle\":\"").append(procesarTexto(ifa.getDetalle()))
+                        .append("\",");
+                    tmp.append("\"precioUnitario\":\"").append(ifa.getPrecioUnitario())
+                        .append("\",");
+                    tmp.append("\"montoTotal\":\"").append(ifa.getMontoTotal()).append("\",");
+                    tmp.append("\"descuentos\":{  ");
+                    if (ifa.getMontoDescuento() != null && !ifa.getMontoDescuento().toString()
+                        .isEmpty()) {
+                      tmp.append("\"0\":{");
+                      tmp.append("\"montoDescuento\":\"").append(ifa.getMontoDescuento())
+                          .append("\",");
+                      tmp.append("\"naturalezaDescuento\":\"")
+                          .append(procesarTexto(ifa.getNaturalezaDescuento())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getMontoDescuento2() != null && ifa.getMontoDescuento2().toString().length() > 0) {
-                      tmp = tmp + ",\"1\":{";
-                      tmp = tmp + "\"montoDescuento\":\"" + ifa.getMontoDescuento2() + "\",";
-                      tmp = tmp + "\"naturalezaDescuento\":\"" + procesarTexto(ifa.getNaturalezaDescuento2()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getMontoDescuento2() != null && !ifa.getMontoDescuento2().toString()
+                        .isEmpty()) {
+                      tmp.append(",\"1\":{");
+                      tmp.append("\"montoDescuento\":\"").append(ifa.getMontoDescuento2())
+                          .append("\",");
+                      tmp.append("\"naturalezaDescuento\":\"")
+                          .append(procesarTexto(ifa.getNaturalezaDescuento2())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getMontoDescuento3() != null && ifa.getMontoDescuento3().toString().length() > 0) {
-                      tmp = tmp + ",\"2\":{";
-                      tmp = tmp + "\"montoDescuento\":\"" + ifa.getMontoDescuento3() + "\",";
-                      tmp = tmp + "\"naturalezaDescuento\":\"" + procesarTexto(ifa.getNaturalezaDescuento3()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getMontoDescuento3() != null && !ifa.getMontoDescuento3().toString()
+                        .isEmpty()) {
+                      tmp.append(",\"2\":{");
+                      tmp.append("\"montoDescuento\":\"").append(ifa.getMontoDescuento3())
+                          .append("\",");
+                      tmp.append("\"naturalezaDescuento\":\"")
+                          .append(procesarTexto(ifa.getNaturalezaDescuento3())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getMontoDescuento4() != null && ifa.getMontoDescuento4().toString().length() > 0) {
-                      tmp = tmp + ",\"3\":{";
-                      tmp = tmp + "\"montoDescuento\":\"" + ifa.getMontoDescuento4() + "\",";
-                      tmp = tmp + "\"naturalezaDescuento\":\"" + procesarTexto(ifa.getNaturalezaDescuento4()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getMontoDescuento4() != null && !ifa.getMontoDescuento4().toString()
+                        .isEmpty()) {
+                      tmp.append(",\"3\":{");
+                      tmp.append("\"montoDescuento\":\"").append(ifa.getMontoDescuento4())
+                          .append("\",");
+                      tmp.append("\"naturalezaDescuento\":\"")
+                          .append(procesarTexto(ifa.getNaturalezaDescuento4())).append("\"");
+                      tmp.append("}");
                     } 
-                    if (ifa.getMontoDescuento5() != null && ifa.getMontoDescuento5().toString().length() > 0) {
-                      tmp = tmp + ",\"4\":{";
-                      tmp = tmp + "\"montoDescuento\":\"" + ifa.getMontoDescuento5() + "\",";
-                      tmp = tmp + "\"naturalezaDescuento\":\"" + procesarTexto(ifa.getNaturalezaDescuento5()) + "\"";
-                      tmp = tmp + "}";
+                    if (ifa.getMontoDescuento5() != null && !ifa.getMontoDescuento5().toString()
+                        .isEmpty()) {
+                      tmp.append(",\"4\":{");
+                      tmp.append("\"montoDescuento\":\"").append(ifa.getMontoDescuento5())
+                          .append("\",");
+                      tmp.append("\"naturalezaDescuento\":\"")
+                          .append(procesarTexto(ifa.getNaturalezaDescuento5())).append("\"");
+                      tmp.append("}");
                     } 
-                    tmp = tmp + "},";
-                    tmp = tmp + "\"subTotal\":\"" + ifa.getSubTotal() + "\",";
+                    tmp.append("},");
+                    tmp.append("\"subTotal\":\"").append(ifa.getSubTotal()).append("\",");
                     int q = 0;
-                    String coma = "";
+                    String coma;
                     int totalLineasImpuesto = ifa.getImpuestosItemFactura().size();
-                    impuestosTmp = impuestosTmp + "\"impuestos\":{";
+                    impuestosTmp.append("\"impuestos\":{");
                     for (ImpuestosItemFactura ifi : ifa.getImpuestosItemFactura()) {
                       if (q + 1 == totalLineasImpuesto) {
                         coma = "";
                       } else {
                         coma = ",";
                       } 
-                      impuestosTmp = impuestosTmp + "\"" + q++ + "\":{";
-                      impuestosTmp = impuestosTmp + "\"codigo\":\"" + ifi.getCodigo() + "\",";
-                      impuestosTmp = impuestosTmp + "\"tarifa\":\"" + ifi.getTarifa() + "\",";
-                      impuestosTmp = impuestosTmp + "\"codigoTarifa\":\"" + ifi.getCodigoTarifa() + "\",";
-                      impuestosTmp = impuestosTmp + "\"monto\":\"" + ifi.getMonto() + "\"";
-                      if (ifi.getImpuestoNeto() != null && ifi.getImpuestoNeto().toString().length() > 0)
-                        impuestosTmp = impuestosTmp + ",\"impuestoNeto\":\"" + ifi.getImpuestoNeto() + "\""; 
+                      impuestosTmp.append("\"").append(q++).append("\":{");
+                      impuestosTmp.append("\"codigo\":\"").append(ifi.getCodigo()).append("\",");
+                      impuestosTmp.append("\"tarifa\":\"").append(ifi.getTarifa()).append("\",");
+                      impuestosTmp.append("\"codigoTarifa\":\"").append(ifi.getCodigoTarifa())
+                          .append("\",");
+                      impuestosTmp.append("\"monto\":\"").append(ifi.getMonto()).append("\"");
+                      if (ifi.getImpuestoNeto() != null && !ifi.getImpuestoNeto().toString()
+                          .isEmpty())
+                        impuestosTmp.append(",\"impuestoNeto\":\"").append(ifi.getImpuestoNeto())
+                            .append("\"");
                       for (ExoneracionImpuestoItemFactura ifie : ifi.getExoneracionImpuestoItemFactura()) {
-                        impuestosTmp = impuestosTmp + ",\"exoneracion\":{";
-                        impuestosTmp = impuestosTmp + "\"tipoDocumento\":\"" + ifie.getTipoDocumento() + "\",";
-                        impuestosTmp = impuestosTmp + "\"numeroDocumento\":\"" + ifie.getNumeroDocumento() + "\",";
-                        impuestosTmp = impuestosTmp + "\"nombreInstitucion\":\"" + procesarTexto(ifie.getNombreInstitucion()) + "\",";
-                        impuestosTmp = impuestosTmp + "\"fechaEmision\":\"" + ifie.getFechaEmision() + "\",";
-                        impuestosTmp = impuestosTmp + "\"montoExoneracion\":\"" + ifie.getMontoExoneracion() + "\",";
-                        impuestosTmp = impuestosTmp + "\"porcentajeExoneracion\":\"" + ifie.getPorcentajeExoneracion() + "\"";
-                        impuestosTmp = impuestosTmp + "}";
+                        impuestosTmp.append(",\"exoneracion\":{");
+                        impuestosTmp.append("\"tipoDocumento\":\"").append(ifie.getTipoDocumento())
+                            .append("\",");
+                        impuestosTmp.append("\"numeroDocumento\":\"")
+                            .append(ifie.getNumeroDocumento()).append("\",");
+                        impuestosTmp.append("\"nombreInstitucion\":\"")
+                            .append(procesarTexto(ifie.getNombreInstitucion())).append("\",");
+                        impuestosTmp.append("\"fechaEmision\":\"").append(ifie.getFechaEmision())
+                            .append("\",");
+                        impuestosTmp.append("\"montoExoneracion\":\"")
+                            .append(ifie.getMontoExoneracion()).append("\",");
+                        impuestosTmp.append("\"porcentajeExoneracion\":\"")
+                            .append(ifie.getPorcentajeExoneracion()).append("\"");
+                        impuestosTmp.append("}");
                       } 
-                      impuestosTmp = impuestosTmp + "}" + coma;
+                      impuestosTmp.append("}").append(coma);
                     } 
-                    impuestosTmp = impuestosTmp + "},";
-                    tmp = tmp + impuestosTmp;
-                    tmp = tmp + "\"impuestoNeto\":\"" + ifa.getImpuestoNeto() + "\",";
-                    tmp = tmp + "\"montoTotalLinea\":\"" + ifa.getMontoTotalLinea() + "\"";
-                    tmp = tmp + "},";
+                    impuestosTmp.append("},");
+                    tmp.append(impuestosTmp);
+                    tmp.append("\"impuestoNeto\":\"").append(ifa.getImpuestoNeto()).append("\",");
+                    tmp.append("\"montoTotalLinea\":\"").append(ifa.getMontoTotalLinea())
+                        .append("\"");
+                    tmp.append("},");
                   } 
                   this.log.info("Sucursal: " + f.getSucursal() + " Terminal: " + f.getTerminal());
                   ftmp = ftmp + "{";
@@ -392,16 +429,16 @@ public class NotaDebitoNotaCreditoAceptadasController {
                 } else {
                   this._comprobantesElectronicosService.deleteById(eliminarConsecutivo);
                   this.log.info("No se esta generando nada, la clave no éxiste");
-                  tmp = "";
+                  tmp = new StringBuilder();
                   ftmp = "";
-                  response.put("response", Integer.valueOf(400));
+                  response.put("response", 400);
                   response.put("msj", "La clave " + claveDocumentoReferencia + " no éxiste en nuestro sistema.");
-                  return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+                  return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
                 } 
                 m = objectMapper.readTree(jsonFinal);
                 c.setDetalleFactura(m.path("detalleLinea").toString());
                 detalleLineaNode = objectMapper.readTree(m.path("detalleLinea").toString());
-                JsonNode referenciasNode = null;
+                JsonNode referenciasNode;
                 String jm = "";
                 jm = jm + "{";
                 jm = jm + "\"0\":{";
@@ -440,9 +477,9 @@ public class NotaDebitoNotaCreditoAceptadasController {
                 c.setMedioPago4(m.path("medioPago4").asText());
                 c.setCodMoneda(m.path("codMoneda").asText());
                 c.setTipoCambio(m.path("tipoCambio").asText());
-                String moneda = "";
-                String tipoCambio = "";
-                if (m.path("codMoneda") != null && m.path("codMoneda").asText().length() > 0) {
+                String moneda;
+                String tipoCambio;
+                if (m.path("codMoneda") != null && !m.path("codMoneda").asText().isEmpty()) {
                   moneda = m.path("codMoneda").asText();
                   tipoCambio = m.path("tipoCambio").asText();
                 } else {
@@ -479,16 +516,16 @@ public class NotaDebitoNotaCreditoAceptadasController {
                 this._signer.sign(this._certificado, this._keyCertificado, fullPath + nameFacturaXml + ".xml", nameOutFacturaXml + ".xml");
                 Factura factura = new Factura();
                 Iterator<JsonNode> elements = detalleLineaNode.elements();
-                String itemImpuestos = "";
-                String codigoComercial = "";
-                String objDescuentos = "";
+                String itemImpuestos;
+                String codigoComercial;
+                String objDescuentos;
                 while (elements.hasNext()) {
                   JsonNode k = elements.next();
                   ItemFactura item = new ItemFactura();
                   item.setNumeroLinea(k.path("numeroLinea").asInt());
                   item.setCodigo(k.path("codigo").asText());
                   codigoComercial = k.path("codigoComercial").toString();
-                  if (codigoComercial != null && codigoComercial.length() > 0) {
+                  if (codigoComercial != null && !codigoComercial.isEmpty()) {
                     m = objectMapper.readTree(codigoComercial);
                     Iterator<JsonNode> codigosComerciales = m.elements();
                     int countCC = 0;
@@ -514,15 +551,15 @@ public class NotaDebitoNotaCreditoAceptadasController {
                       } 
                     } 
                   } 
-                  item.setCantidad(Double.valueOf(k.path("cantidad").asDouble()));
+                  item.setCantidad(k.path("cantidad").asDouble());
                   item.setUnidadMedida(k.path("unidadMedida").asText());
                   item.setUnidadMedidaComercial(k.path("unidadMedidaComercial").asText());
                   item.setDetalle(k.path("detalle").asText());
-                  item.setPrecioUnitario(Double.valueOf(k.path("precioUnitario").asDouble()));
-                  item.setMontoTotal(Double.valueOf(k.path("montoTotal").asDouble()));
-                  item.setSubTotal(Double.valueOf(k.path("subTotal").asDouble()));
+                  item.setPrecioUnitario(k.path("precioUnitario").asDouble());
+                  item.setMontoTotal(k.path("montoTotal").asDouble());
+                  item.setSubTotal(k.path("subTotal").asDouble());
                   objDescuentos = k.path("descuentos").toString();
-                  if (objDescuentos != null && objDescuentos.length() > 0) {
+                  if (objDescuentos != null && !objDescuentos.isEmpty()) {
                     m = objectMapper.readTree(objDescuentos);
                     Iterator<JsonNode> descuentos = m.elements();
                     int countCC = 0;
@@ -531,25 +568,25 @@ public class NotaDebitoNotaCreditoAceptadasController {
                       countCC++;
                       switch (countCC) {
                         case 1:
-                          item.setMontoDescuento(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                          item.setMontoDescuento(dd.path("montoDescuento").asDouble());
                           item.setNaturalezaDescuento(dd.path("naturalezaDescuento").asText());
                         case 2:
-                          item.setMontoDescuento2(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                          item.setMontoDescuento2(dd.path("montoDescuento").asDouble());
                           item.setNaturalezaDescuento2(dd.path("naturalezaDescuento").asText());
                         case 3:
-                          item.setMontoDescuento3(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                          item.setMontoDescuento3(dd.path("montoDescuento").asDouble());
                           item.setNaturalezaDescuento3(dd.path("naturalezaDescuento").asText());
                         case 4:
-                          item.setMontoDescuento4(Double.valueOf(k.path("montoDescuento").asDouble()));
+                          item.setMontoDescuento4(k.path("montoDescuento").asDouble());
                           item.setNaturalezaDescuento4(dd.path("naturalezaDescuento").asText());
                         case 5:
-                          item.setMontoDescuento5(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                          item.setMontoDescuento5(dd.path("montoDescuento").asDouble());
                           item.setNaturalezaDescuento5(dd.path("naturalezaDescuento").asText());
                       } 
                     } 
                   } 
                   itemImpuestos = k.path("impuestos").toString();
-                  if (itemImpuestos != null && itemImpuestos.length() > 0) {
+                  if (itemImpuestos != null && !itemImpuestos.isEmpty()) {
                     m = objectMapper.readTree(itemImpuestos);
                     Iterator<JsonNode> impuestos = m.elements();
                     while (impuestos.hasNext()) {
@@ -557,58 +594,62 @@ public class NotaDebitoNotaCreditoAceptadasController {
                       JsonNode imp = impuestos.next();
                       iif.setCodigo(imp.path("codigo").asText());
                       iif.setCodigoTarifa(imp.path("codigoTarifa").asText());
-                      iif.setFactorIva(Double.valueOf(imp.path("factorIva").asDouble()));
-                      iif.setTarifa(Double.valueOf(imp.path("tarifa").asDouble()));
-                      iif.setMonto(Double.valueOf(imp.path("monto").asDouble()));
-                      iif.setMontoExportacion(Double.valueOf(imp.path("montoExportacion").asDouble()));
+                      iif.setFactorIva(imp.path("factorIva").asDouble());
+                      iif.setTarifa(imp.path("tarifa").asDouble());
+                      iif.setMonto(imp.path("monto").asDouble());
+                      iif.setMontoExportacion(imp.path("montoExportacion").asDouble());
                       ExoneracionImpuestoItemFactura eiif = new ExoneracionImpuestoItemFactura();
-                      if (imp.path("exoneracion").path("tipoDocumento").asText() != null && imp.path("exoneracion").path("tipoDocumento").asText().length() > 0) {
-                        if (imp.path("exoneracion").path("tipoDocumento").asText() != null && imp
-                          .path("exoneracion").path("tipoDocumento").asText().length() > 0) {
+                      if (imp.path("exoneracion").path("tipoDocumento").asText() != null && !imp.path(
+                          "exoneracion").path("tipoDocumento").asText().isEmpty()) {
+                        if (imp.path("exoneracion").path("tipoDocumento").asText() != null && !imp
+                            .path("exoneracion").path("tipoDocumento").asText().isEmpty()) {
                           eiif.setTipoDocumento(imp.path("exoneracion").path("tipoDocumento").asText());
                         } else {
-                          response.put("response", Integer.valueOf(401));
+                          response.put("response", 401);
                           response.put("msj", "Tipo de documento de exoneración es requerido.");
-                          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                         } 
-                        if (imp.path("exoneracion").path("numeroDocumento").asText() != null && imp
-                          .path("exoneracion").path("numeroDocumento").asText().length() > 0) {
+                        if (imp.path("exoneracion").path("numeroDocumento").asText() != null && !imp
+                            .path("exoneracion").path("numeroDocumento").asText().isEmpty()) {
                           eiif.setNumeroDocumento(imp.path("exoneracion").path("numeroDocumento").asText());
                         } else {
-                          response.put("response", Integer.valueOf(401));
+                          response.put("response", 401);
                           response.put("msj", "Número de exoneración es requerido.");
-                          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                         } 
-                        if (imp.path("exoneracion").path("nombreInstitucion").asText() != null && imp
-                          .path("exoneracion").path("nombreInstitucion").asText().length() > 0) {
+                        if (imp.path("exoneracion").path("nombreInstitucion").asText() != null && !imp
+                            .path("exoneracion").path("nombreInstitucion").asText().isEmpty()) {
                           eiif.setNombreInstitucion(imp
                               .path("exoneracion").path("nombreInstitucion").asText());
                         } else {
-                          response.put("response", Integer.valueOf(401));
+                          response.put("response", 401);
                           response.put("msj", "Nombre de institución exonerada es requerido.");
-                          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                         } 
-                        if (imp.path("exoneracion").path("fechaEmision").asText() != null && imp
-                          .path("exoneracion").path("fechaEmision").asText().length() > 0) {
+                        if (imp.path("exoneracion").path("fechaEmision").asText() != null && !imp
+                            .path("exoneracion").path("fechaEmision").asText().isEmpty()) {
                           eiif.setFechaEmision(imp.path("exoneracion").path("fechaEmision").asText());
                         } else {
-                          response.put("response", Integer.valueOf(401));
+                          response.put("response", 401);
                           response.put("msj", "Fecha de emisión de exoneración es requerido.");
-                          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                         } 
-                        if (imp.path("exoneracion").path("montoExoneracion").asText() != null && imp.path("exoneracion").path("montoExoneracion").asText().length() > 0) {
-                          eiif.setMontoExoneracion(Double.valueOf(imp.path("exoneracion").path("montoExoneracion").asDouble()));
+                        if (imp.path("exoneracion").path("montoExoneracion").asText() != null && !imp.path(
+                            "exoneracion").path("montoExoneracion").asText().isEmpty()) {
+                          eiif.setMontoExoneracion(
+                              imp.path("exoneracion").path("montoExoneracion").asDouble());
                         } else {
-                          response.put("response", Integer.valueOf(401));
+                          response.put("response", 401);
                           response.put("msj", "Monto de impuesto de exoneración es requerido.");
-                          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                         } 
-                        if (imp.path("exoneracion").path("porcentajeExoneracion").asText() != null && imp.path("exoneracion").path("porcentajeExoneracion").asText().length() > 0) {
+                        if (imp.path("exoneracion").path("porcentajeExoneracion").asText() != null && !imp.path(
+                            "exoneracion").path("porcentajeExoneracion").asText().isEmpty()) {
                           eiif.setPorcentajeExoneracion(imp.path("exoneracion").path("porcentajeExoneracion").asInt());
                         } else {
-                          response.put("response", Integer.valueOf(401));
+                          response.put("response", 401);
                           response.put("msj", "Porcentaje de compra de exoneración es requerido.");
-                          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                         } 
                         iif.addItemFacturaImpuestosExoneracion(eiif);
                       } 
@@ -616,8 +657,8 @@ public class NotaDebitoNotaCreditoAceptadasController {
                     } 
                   } 
                   if (k.path("montoTotalLinea") != null && k.path("montoTotalLinea").asDouble() > 0.0D)
-                    item.setMontoTotalLinea(Double.valueOf(k.path("montoTotalLinea").asDouble())); 
-                  item.setImpuestoNeto(Double.valueOf(k.path("impuestoNeto").asDouble()));
+                    item.setMontoTotalLinea(k.path("montoTotalLinea").asDouble());
+                  item.setImpuestoNeto(k.path("impuestoNeto").asDouble());
                   factura.addItemFactura(item);
                 } 
                 factura.setTipoDocumento(tipoDocumento);
@@ -667,7 +708,7 @@ public class NotaDebitoNotaCreditoAceptadasController {
                 factura.setCodMoneda(c.getCodMoneda());
                 factura.setTipoCambio(c.getTipoCambio());
                 String referencias = m.path("referencias").toString();
-                if (referencias != null && referencias.length() > 0) {
+                if (referencias != null && !referencias.isEmpty()) {
                   Iterator<JsonNode> referencia = referenciasNode.elements();
                   while (referencia.hasNext()) {
                     FacturaReferencia fr = new FacturaReferencia();
@@ -703,50 +744,41 @@ public class NotaDebitoNotaCreditoAceptadasController {
                 factura.setOtros(c.getOtros());
                 factura.setNumeroFactura(c.getNumeroFactura());
                 this._facturaService.save(factura);
-                response.put("response", Integer.valueOf(200));
+                response.put("response", 200);
                 response.put("clave", c.getClave());
                 response.put("consecutivo", c.getConsecutivo());
                 response.put("fechaEmision", c.getFechaEmision());
                 response.put("fileXmlSign", nameFacturaFirmada);
-                return new ResponseEntity(response, HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
               } 
-              response.put("response", Integer.valueOf(401));
+              response.put("response", 401);
               response.put("msj", "Solo se aceptan Notas de Débito y Notas de Crédito aceptadas por Hacienda.");
-              return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+              return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
             } 
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "El usuario o token no éxiste.");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } catch (Exception e) {
             e.printStackTrace();
-            response.put("response", Integer.valueOf(404));
+            response.put("response", 404);
             response.put("msj", e.getMessage());
-            return new ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
           }  
-        response.put("response", Integer.valueOf(401));
+        response.put("response", 401);
         response.put("msj", "La terminal es requerida.");
-        return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
       } 
-      response.put("response", Integer.valueOf(401));
+      response.put("response", 401);
       response.put("msj", "La sucursal es requerida.");
-      return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+      return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     } 
-    response.put("response", Integer.valueOf(401));
+    response.put("response", 401);
     response.put("msj", "La situación es requerida.");
-    return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+    return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
   }
-  
-  public String procesarNumeros(String j, String decimales) {
-    NumberFormat formatter = new DecimalFormat(decimales);
-    String r = "";
-    r = (j != null && !j.equals("")) ? j : "0.00000";
-    r = formatter.format(Double.parseDouble(r));
-    r = r.replaceAll(",", ".");
-    return r;
-  }
-  
+
   public String procesarTexto(String j) {
-    String r = "";
+    String r;
     r = StringEscapeUtils.escapeJava(j);
     return r;
   }

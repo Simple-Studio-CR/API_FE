@@ -7,10 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface IComprobantesElectronicosDao extends CrudRepository<ComprobantesElectronicos, Long> {
-  @Query("SELECT MAX(c) FROM ComprobantesElectronicos c WHERE c.identificacion=?1 AND c.tipoDocumento = ?2 AND c.sucursal = ?3 AND c.terminal=?4 AND c.ambiente = ?5")
+  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.identificacion = ?1 AND c.tipoDocumento = ?2 AND c.sucursal = ?3 AND c.terminal = ?4 AND c.ambiente = ?5 ORDER BY c.id DESC LIMIT 1")
   ComprobantesElectronicos findByEmisor(String paramString1, String paramString2, int paramInt1, int paramInt2, String paramString3);
-  
-  @Query("SELECT MAX(c) FROM ComprobantesElectronicos c WHERE c.clave=?1")
+
+  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.clave = ?1 ORDER BY c.id DESC LIMIT 1")
   ComprobantesElectronicos findByClave(String paramString);
   
   @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.clave=?1")
@@ -20,7 +20,7 @@ public interface IComprobantesElectronicosDao extends CrudRepository<Comprobante
   @Query("UPDATE ComprobantesElectronicos c SET c.responseCodeSend=?1, c.headers = ?2 WHERE c.clave =?3 AND c.identificacion = ?4")
   void updateComprobantesElectronicosByClaveAndEmisor(String paramString1, String paramString2, String paramString3, String paramString4);
   
-  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.responseCodeSend IS NULL OR c.responseCodeSend = '' OR c.responseCodeSend != 202 AND (c.indEstado != 'aceptado' OR c.indEstado IS NULL OR c.indEstado = '')")
+  @Query("SELECT c FROM ComprobantesElectronicos c WHERE c.responseCodeSend IS NULL OR c.responseCodeSend = '' OR c.responseCodeSend != '202' AND (c.indEstado != 'aceptado' OR c.indEstado IS NULL OR c.indEstado = '')")
   List<ComprobantesElectronicos> findAllForSend();
   
   @Modifying(clearAutomatically = true)

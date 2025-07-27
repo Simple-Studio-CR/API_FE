@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface ITokenControlDao extends CrudRepository<TokenControl, Long> {
-  @Query("SELECT t FROM TokenControl t WHERE t.emisor = ?1 GROUP BY t.emisor ORDER BY t.id DESC")
+  @Query("SELECT t FROM TokenControl t WHERE t.emisor = ?1 ORDER BY t.id DESC LIMIT 1")
   TokenControl findByEmisor(String paramString);
   
   @Modifying(clearAutomatically = true)

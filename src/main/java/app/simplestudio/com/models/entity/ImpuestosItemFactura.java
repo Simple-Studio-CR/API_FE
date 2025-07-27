@@ -3,16 +3,16 @@ package app.simplestudio.com.models.entity;
 import app.simplestudio.com.models.entity.ExoneracionImpuestoItemFactura;
 import java.util.ArrayList;
 import java.util.List;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "facturas_items_impuestos")
@@ -31,19 +31,19 @@ public class ImpuestosItemFactura {
   @Column(name = "codigo_tarifa", length = 2)
   private String codigoTarifa;
   
-  @Column(precision = 4, scale = 2)
+  @Column(precision = 4)
   private Double tarifa;
   
-  @Column(name = "factor_iva", precision = 4, scale = 2)
+  @Column(name = "factor_iva", precision = 4)
   private Double factorIva;
   
-  @Column(precision = 20, scale = 3)
+  @Column(precision = 20)
   private Double monto;
   
-  @Column(name = "impuesto_neto", precision = 20, scale = 3)
+  @Column(name = "impuesto_neto", precision = 20)
   private Double impuestoNeto;
   
-  @Column(name = "monto_exportacion", precision = 20, scale = 3)
+  @Column(name = "monto_exportacion", precision = 20)
   private Double montoExportacion;
   
   public Long getId() {

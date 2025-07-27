@@ -23,6 +23,7 @@ import app.simplestudio.com.service.IFacturaService;
 import app.simplestudio.com.service.IMensajeReceptorService;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +33,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.http.client.ClientProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ public class RecepcionController {
   
   @Autowired
   private Sender _sender;
-  
+
   @Autowired
   private IEmisorService _emisorService;
   
@@ -143,13 +144,13 @@ public class RecepcionController {
         response.put("fecha", d.path("fecha").asText());
         response.put("ind-estado", d.path("ind-estado").asText());
         response.put("respuesta-xml", d.path("respuesta-xml").asText());
-        return new ResponseEntity(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
       } 
       response.put("response", "Acceso denegado.");
-      return new ResponseEntity(response, HttpStatus.NON_AUTHORITATIVE_INFORMATION);
+      return new ResponseEntity<>(response, HttpStatus.NON_AUTHORITATIVE_INFORMATION);
     } catch (Exception e) {
       response.put("response", "Problemas con Hacienda.");
-      return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+      return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     } 
   }
   
@@ -180,7 +181,8 @@ public class RecepcionController {
         JsonNode d = objectMapper.readTree(resturApi);
         DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         InputSource is = new InputSource();
-        is.setCharacterStream(new StringReader(new String(Base64.decodeBase64(d.path("respuesta-xml").asText()), "UTF-8")));
+        is.setCharacterStream(new StringReader(new String(Base64.decodeBase64(d.path("respuesta-xml").asText()),
+            StandardCharsets.UTF_8)));
         Document doc = db.parse(is);
         NodeList nodes = doc.getElementsByTagName("MensajeHacienda");
         String mensajeMh = "";
@@ -190,18 +192,18 @@ public class RecepcionController {
           Element line = (Element)name.item(0);
           mensajeMh = StringEscapeUtils.escapeJava(getCharacterDataFromElement(line));
         } 
-        response.put("response-code", Integer.valueOf(200));
+        response.put("response-code", 200);
         response.put("clave", d.path("clave").asText());
         response.put("fecha", d.path("fecha").asText());
         response.put("ind-estado", d.path("ind-estado").asText());
         response.put("respuesta-xml", mensajeMh);
-        return new ResponseEntity(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
       } 
       response.put("response", "Acceso denegado.");
-      return new ResponseEntity(response, HttpStatus.NON_AUTHORITATIVE_INFORMATION);
+      return new ResponseEntity<>(response, HttpStatus.NON_AUTHORITATIVE_INFORMATION);
     } catch (Exception e) {
       response.put("response", "Problemas con Hacienda.");
-      return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+      return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     } 
   }
   
@@ -215,21 +217,23 @@ public class RecepcionController {
       Emisor e = this._emisorService.findEmisorByIdentificacion(m.path("emisor").asText(), tokenAccess);
       if (e != null) {
         ComprobantesElectronicos ce = this._comprobantesElectronicosService.findByClaveDocumento(m.path("clave").asText());
-        String nameXml = (ce.getNameXmlAcceptacion() != null && ce.getNameXmlAcceptacion().length() > 0) ? ce.getNameXmlAcceptacion() : "";
-        String indEstado = (ce.getIndEstado() != null && ce.getIndEstado().length() > 0) ? ce.getIndEstado() : "procesando";
-        String fechaAceptacion = (ce.getFechaAceptacion() != null && ce.getFechaAceptacion().length() > 0) ? ce.getFechaAceptacion() : "";
-        response.put("response", Integer.valueOf(200));
+        String nameXml = (ce.getNameXmlAcceptacion() != null && !ce.getNameXmlAcceptacion()
+            .isEmpty()) ? ce.getNameXmlAcceptacion() : "";
+        String indEstado = (ce.getIndEstado() != null && !ce.getIndEstado().isEmpty()) ? ce.getIndEstado() : "procesando";
+        String fechaAceptacion = (ce.getFechaAceptacion() != null && !ce.getFechaAceptacion()
+            .isEmpty()) ? ce.getFechaAceptacion() : "";
+        response.put("response", 200);
         response.put("clave", ce.getClave());
         response.put("ind-estado", indEstado);
         response.put("xml-aceptacion", nameXml);
         response.put("fecha-aceptacion", fechaAceptacion);
-        return new ResponseEntity(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
       } 
       response.put("response", "Acceso denegado.");
-      return new ResponseEntity(response, HttpStatus.NON_AUTHORITATIVE_INFORMATION);
+      return new ResponseEntity<>(response, HttpStatus.NON_AUTHORITATIVE_INFORMATION);
     } catch (Exception e) {
       response.put("response", "Problemas con Hacienda.");
-      return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+      return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     } 
   }
   
@@ -252,51 +256,52 @@ public class RecepcionController {
     String clave = "";
     String claveCliente = (m.path("clave").asText() != null) ? m.path("clave").asText() : "";
     String fechaEmisionCliente = (m.path("fechaEmisionCliente").asText() != null) ? m.path("fechaEmisionCliente").asText().trim() : "";
-    Long consecutivoFinal = Long.valueOf(Long.parseLong("0"));
+    Long consecutivoFinal = Long.parseLong("0");
     if (m.path("omitirReceptor").asText().equalsIgnoreCase("true"))
       if (tipoDocumento.equalsIgnoreCase("FE") || tipoDocumento.equalsIgnoreCase("FEC")) {
-        response.put("response", Integer.valueOf(401));
+        response.put("response", 401);
         response.put("msj", "Los datos del receptor nombre y identificación (tipo y número) son requeridos para Factura Electrónica y para Factura Electrónica Compra!!!");
-        return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
       }  
     if (m.path("omitirReceptor").asText().equalsIgnoreCase("false"))
-      if (m.path("receptorNombre") != null && m.path("receptorNombre").asText().length() > 0) {
-        if (m.path("receptorTipoIdentif") != null && m.path("receptorTipoIdentif").asText().length() > 0) {
+      if (m.path("receptorNombre") != null && !m.path("receptorNombre").asText().isEmpty()) {
+        if (m.path("receptorTipoIdentif") != null && !m.path("receptorTipoIdentif").asText()
+            .isEmpty()) {
           if (m.path("receptorNumIdentif") == null || m.path("receptorNumIdentif").asText().length() <= 0) {
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "El número de identificación es requerido!!!");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } 
         } else {
-          response.put("response", Integer.valueOf(401));
+          response.put("response", 401);
           response.put("msj", "El tipo de identificación es requerido!!!");
-          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
         } 
       } else {
-        response.put("response", Integer.valueOf(401));
+        response.put("response", 401);
         response.put("msj", "El nombre del receptor es requerido!!!");
-        return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
       }  
-    Long eliminarConsecutivo = Long.valueOf(Long.parseLong("0"));
+    Long eliminarConsecutivo = Long.parseLong("0");
     if (claveCliente.length() == 50) {
       clave = m.path("clave").asText();
       fechaEmision = m.path("fechaEmision").asText();
-    } else if (situacion != null && situacion.length() > 0) {
-      if (sucursal != null && sucursal.length() > 0) {
+    } else if (situacion != null && !situacion.isEmpty()) {
+      if (sucursal != null && !sucursal.isEmpty()) {
         if (terminal == null || terminal.length() <= 0) {
-          response.put("response", Integer.valueOf(401));
+          response.put("response", 401);
           response.put("msj", "La terminal es requerida.");
-          return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+          return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
         } 
       } else {
-        response.put("response", Integer.valueOf(401));
+        response.put("response", 401);
         response.put("msj", "La sucursal es requerida.");
-        return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
       } 
     } else {
-      response.put("response", Integer.valueOf(401));
+      response.put("response", 401);
       response.put("msj", "La situación es requerida.");
-      return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+      return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     } 
     try {
       String tokenAccess = m.path("tokenAccess").asText().trim();
@@ -307,38 +312,27 @@ public class RecepcionController {
         if (claveCliente.length() != 50) {
           CTerminal csu = this._emisorService.findBySecuenciaByTerminal(e.getId(), m.path("sucursal").asInt(), m.path("terminal").asInt());
           if (csu != null) {
-            switch (tipoDocumento) {
-              case "FE":
-                consecutivoEm = csu.getConsecutivoFe();
-                break;
-              case "TE":
-                consecutivoEm = csu.getConsecutivoTe();
-                break;
-              case "NC":
-                consecutivoEm = csu.getConsecutivoNc();
-                break;
-              case "ND":
-                consecutivoEm = csu.getConsecutivoNd();
-                break;
-              case "FEC":
-                consecutivoEm = csu.getConsecutivoFEC();
-                break;
-              case "FEE":
-                consecutivoEm = csu.getConsecutivoFEE();
-                break;
-            } 
+            consecutivoEm = switch (tipoDocumento) {
+              case "FE" -> csu.getConsecutivoFe();
+              case "TE" -> csu.getConsecutivoTe();
+              case "NC" -> csu.getConsecutivoNc();
+              case "ND" -> csu.getConsecutivoNd();
+              case "FEC" -> csu.getConsecutivoFEC();
+              case "FEE" -> csu.getConsecutivoFEE();
+              default -> consecutivoEm;
+            };
           } else {
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "La sucursal o la terminal no existen.");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } 
           ComprobantesElectronicos ce = this._comprobantesElectronicosService.findByEmisor(emisor, tipoDocumento.trim(), m.path("sucursal").asInt(), m.path("terminal").asInt(), e.getAmbiente());
           if (ce != null) {
-            consecutivoCe = Long.valueOf(ce.getConsecutivo().longValue() + 1L);
+            consecutivoCe = ce.getConsecutivo() + 1L;
           } else {
-            consecutivoCe = Long.valueOf(Long.parseLong("1"));
+            consecutivoCe = Long.parseLong("1");
           } 
-          consecutivoFinal = (consecutivoCe.longValue() < consecutivoEm.longValue()) ? consecutivoEm : consecutivoCe;
+          consecutivoFinal = (consecutivoCe < consecutivoEm) ? consecutivoEm : consecutivoCe;
           String generaClave = this._sender.getClave(tipoDocumento, "0" + e.getTipoDeIdentificacion().getId(), emisor, m
               .path("situacion").asText(), e.getCodigoPais(), consecutivoFinal
               .toString(), this._funcionesService.getCodigoSeguridad(8), m
@@ -377,32 +371,32 @@ public class RecepcionController {
           if (m.path("receptorProvincia") != null) {
             c.setEmisorProv(m.path("receptorProvincia").asText());
           } else {
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "Campo provincia es requerida.");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } 
           if (m.path("receptorCanton") != null) {
             c.setEmisorCanton(m.path("receptorCanton").asText());
           } else {
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "Campo cantón es requerido.");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } 
           if (m.path("receptorDistrito") != null) {
             c.setEmisorDistrito(m.path("receptorDistrito").asText());
           } else {
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "Campo distrito es requerido.");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } 
           if (m.path("receptorBarrio") != null)
             c.setEmisorBarrio(m.path("receptorBarrio").asText()); 
           if (e.getOtrasSenas() != null) {
             c.setEmisorOtrasSenas(m.path("receptorOtrasSenas").asText());
           } else {
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "Campo Otras señas es requerido.");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } 
           c.setEmisorCodPaisTel(m.path("receptorCodPaisTel").asText());
           c.setEmisorTel(m.path("receptorTel").asText());
@@ -425,9 +419,9 @@ public class RecepcionController {
               c.setReceptorBarrio(this._funcionesService.str_pad(e.getBarrio().getNumeroBarrio(), 2, "0", "STR_PAD_LEFT")); 
             c.setReceptorOtrasSenas(e.getOtrasSenas());
           } else {
-            response.put("response", Integer.valueOf(401));
+            response.put("response", 401);
             response.put("msj", "Campo provincia, cantón, distrito y otras señas son requeridos para la Factura de Compra.");
-            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
           } 
           c.setReceptorCodPaisTel((e.getCodigoPais() != null) ? e.getCodigoPais() : "");
           c.setReceptorTel(e.getTelefono());
@@ -496,7 +490,7 @@ public class RecepcionController {
         c.setTipoCambio(m.path("tipoCambio").asText());
         String moneda = "";
         String tipoCambio = "";
-        if (m.path("codMoneda") != null && m.path("codMoneda").asText().length() > 0) {
+        if (m.path("codMoneda") != null && !m.path("codMoneda").asText().isEmpty()) {
           moneda = m.path("codMoneda").asText();
           tipoCambio = m.path("tipoCambio").asText();
         } else {
@@ -550,7 +544,7 @@ public class RecepcionController {
           item.setPartidaArancelaria(k.path("partidaArancelaria").asText());
           item.setCodigo(k.path("codigo").asText());
           codigoComercial = k.path("codigoComercial").toString();
-          if (codigoComercial != null && codigoComercial.length() > 0) {
+          if (codigoComercial != null && !codigoComercial.isEmpty()) {
             m = objectMapper.readTree(codigoComercial);
             Iterator<JsonNode> codigosComerciales = m.elements();
             int countCC = 0;
@@ -576,15 +570,15 @@ public class RecepcionController {
               } 
             } 
           } 
-          item.setCantidad(Double.valueOf(k.path("cantidad").asDouble()));
+          item.setCantidad(k.path("cantidad").asDouble());
           item.setUnidadMedida(k.path("unidadMedida").asText());
           item.setUnidadMedidaComercial(k.path("unidadMedidaComercial").asText());
           item.setDetalle(k.path("detalle").asText());
-          item.setPrecioUnitario(Double.valueOf(k.path("precioUnitario").asDouble()));
-          item.setMontoTotal(Double.valueOf(k.path("montoTotal").asDouble()));
-          item.setSubTotal(Double.valueOf(k.path("subTotal").asDouble()));
+          item.setPrecioUnitario(k.path("precioUnitario").asDouble());
+          item.setMontoTotal(k.path("montoTotal").asDouble());
+          item.setSubTotal(k.path("subTotal").asDouble());
           objDescuentos = k.path("descuentos").toString();
-          if (objDescuentos != null && objDescuentos.length() > 0) {
+          if (objDescuentos != null && !objDescuentos.isEmpty()) {
             m = objectMapper.readTree(objDescuentos);
             Iterator<JsonNode> descuentos = m.elements();
             int countCC = 0;
@@ -593,25 +587,25 @@ public class RecepcionController {
               countCC++;
               switch (countCC) {
                 case 1:
-                  item.setMontoDescuento(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                  item.setMontoDescuento(dd.path("montoDescuento").asDouble());
                   item.setNaturalezaDescuento(dd.path("naturalezaDescuento").asText());
                 case 2:
-                  item.setMontoDescuento2(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                  item.setMontoDescuento2(dd.path("montoDescuento").asDouble());
                   item.setNaturalezaDescuento2(dd.path("naturalezaDescuento").asText());
                 case 3:
-                  item.setMontoDescuento3(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                  item.setMontoDescuento3(dd.path("montoDescuento").asDouble());
                   item.setNaturalezaDescuento3(dd.path("naturalezaDescuento").asText());
                 case 4:
-                  item.setMontoDescuento4(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                  item.setMontoDescuento4(dd.path("montoDescuento").asDouble());
                   item.setNaturalezaDescuento4(dd.path("naturalezaDescuento").asText());
                 case 5:
-                  item.setMontoDescuento5(Double.valueOf(dd.path("montoDescuento").asDouble()));
+                  item.setMontoDescuento5(dd.path("montoDescuento").asDouble());
                   item.setNaturalezaDescuento5(dd.path("naturalezaDescuento").asText());
               } 
             } 
           } 
           itemImpuestos = k.path("impuestos").toString();
-          if (itemImpuestos != null && itemImpuestos.length() > 0) {
+          if (itemImpuestos != null && !itemImpuestos.isEmpty()) {
             m = objectMapper.readTree(itemImpuestos);
             Iterator<JsonNode> impuestos = m.elements();
             while (impuestos.hasNext()) {
@@ -619,64 +613,72 @@ public class RecepcionController {
               JsonNode imp = impuestos.next();
               iif.setCodigo(imp.path("codigo").asText());
               iif.setCodigoTarifa(imp.path("codigoTarifa").asText());
-              iif.setFactorIva(Double.valueOf(imp.path("factorIva").asDouble()));
-              iif.setTarifa(Double.valueOf(imp.path("tarifa").asDouble()));
-              iif.setMonto(Double.valueOf(imp.path("monto").asDouble()));
-              iif.setMontoExportacion(Double.valueOf(imp.path("montoExportacion").asDouble()));
+              iif.setFactorIva(imp.path("factorIva").asDouble());
+              iif.setTarifa(imp.path("tarifa").asDouble());
+              iif.setMonto(imp.path("monto").asDouble());
+              iif.setMontoExportacion(imp.path("montoExportacion").asDouble());
               ExoneracionImpuestoItemFactura eiif = new ExoneracionImpuestoItemFactura();
-              if (imp.path("exoneracion").path("tipoDocumento").asText() != null && imp.path("exoneracion").path("tipoDocumento").asText().length() > 0) {
-                if (imp.path("exoneracion").path("tipoDocumento").asText() != null && imp.path("exoneracion").path("tipoDocumento").asText().length() > 0) {
+              if (imp.path("exoneracion").path("tipoDocumento").asText() != null && !imp.path(
+                  "exoneracion").path("tipoDocumento").asText().isEmpty()) {
+                if (imp.path("exoneracion").path("tipoDocumento").asText() != null && !imp.path(
+                    "exoneracion").path("tipoDocumento").asText().isEmpty()) {
                   eiif.setTipoDocumento(imp.path("exoneracion").path("tipoDocumento").asText());
                 } else {
-                  response.put("response", Integer.valueOf(401));
+                  response.put("response", 401);
                   response.put("msj", "Tipo de documento de exoneración es requerido.");
-                  return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                  return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                 } 
-                if (imp.path("exoneracion").path("numeroDocumento").asText() != null && imp.path("exoneracion").path("numeroDocumento").asText().length() > 0) {
+                if (imp.path("exoneracion").path("numeroDocumento").asText() != null && !imp.path(
+                    "exoneracion").path("numeroDocumento").asText().isEmpty()) {
                   eiif.setNumeroDocumento(imp.path("exoneracion").path("numeroDocumento").asText());
                 } else {
-                  response.put("response", Integer.valueOf(401));
+                  response.put("response", 401);
                   response.put("msj", "Número de exoneración es requerido.");
-                  return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                  return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                 } 
-                if (imp.path("exoneracion").path("nombreInstitucion").asText() != null && imp.path("exoneracion").path("nombreInstitucion").asText().length() > 0) {
+                if (imp.path("exoneracion").path("nombreInstitucion").asText() != null && !imp.path(
+                    "exoneracion").path("nombreInstitucion").asText().isEmpty()) {
                   eiif.setNombreInstitucion(imp.path("exoneracion").path("nombreInstitucion").asText());
                 } else {
-                  response.put("response", Integer.valueOf(401));
+                  response.put("response", 401);
                   response.put("msj", "Nombre de institución exonerada es requerido.");
-                  return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                  return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                 } 
-                if (imp.path("exoneracion").path("fechaEmision") != null && imp.path("exoneracion").path("fechaEmision").asText().length() > 0) {
+                if (imp.path("exoneracion").path("fechaEmision") != null && !imp.path("exoneracion")
+                    .path("fechaEmision").asText().isEmpty()) {
                   eiif.setFechaEmision(imp.path("exoneracion").path("fechaEmision").asText());
                 } else {
-                  response.put("response", Integer.valueOf(401));
+                  response.put("response", 401);
                   response.put("msj", "Fecha de emisión de exoneración es requerido.");
-                  return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                  return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                 } 
-                if (imp.path("exoneracion").path("montoExoneracion").asText() != null && imp.path("exoneracion").path("montoExoneracion").asText().length() > 0) {
-                  eiif.setMontoExoneracion(Double.valueOf(imp.path("exoneracion").path("montoExoneracion").asDouble()));
+                if (imp.path("exoneracion").path("montoExoneracion").asText() != null && !imp.path(
+                    "exoneracion").path("montoExoneracion").asText().isEmpty()) {
+                  eiif.setMontoExoneracion(
+                      imp.path("exoneracion").path("montoExoneracion").asDouble());
                 } else {
-                  response.put("response", Integer.valueOf(401));
+                  response.put("response", 401);
                   response.put("msj", "Monto de impuesto de exoneración es requerido.");
-                  return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                  return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                 } 
-                if (imp.path("exoneracion").path("porcentajeExoneracion").asText() != null && imp.path("exoneracion").path("porcentajeExoneracion").asText().length() > 0) {
+                if (imp.path("exoneracion").path("porcentajeExoneracion").asText() != null && !imp.path(
+                    "exoneracion").path("porcentajeExoneracion").asText().isEmpty()) {
                   eiif.setPorcentajeExoneracion(imp.path("exoneracion").path("porcentajeExoneracion").asInt());
                 } else {
-                  response.put("response", Integer.valueOf(401));
+                  response.put("response", 401);
                   response.put("msj", "Porcentaje de exoneración es requerido.");
-                  return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+                  return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
                 } 
                 iif.addItemFacturaImpuestosExoneracion(eiif);
               } 
               item.addItemFacturaImpuestos(iif);
             } 
           } 
-          item.setImpuestoNeto(Double.valueOf(k.path("impuestoNeto").asDouble()));
-          item.setMontoTotalLinea(Double.valueOf(k.path("montoTotalLinea").asDouble()));
+          item.setImpuestoNeto(k.path("impuestoNeto").asDouble());
+          item.setMontoTotalLinea(k.path("montoTotalLinea").asDouble());
           factura.addItemFactura(item);
         } 
-        if (otrosCargos != null && otrosCargos.length() > 0) {
+        if (otrosCargos != null && !otrosCargos.isEmpty()) {
           Iterator<JsonNode> otroCargo = otrosCargosNode.elements();
           int contador = 0;
           while (otroCargo.hasNext()) {
@@ -741,7 +743,7 @@ public class RecepcionController {
         factura.setCodMoneda(c.getCodMoneda());
         factura.setTipoCambio(c.getTipoCambio());
         String referencias = m.path("referencias").toString();
-        if (referencias != null && referencias.length() > 0) {
+        if (referencias != null && !referencias.isEmpty()) {
           Iterator<JsonNode> referencia = referenciasNode.elements();
           while (referencia.hasNext()) {
             FacturaReferencia fr = new FacturaReferencia();
@@ -777,25 +779,24 @@ public class RecepcionController {
         factura.setOtros(c.getOtros());
         factura.setNumeroFactura(numeroFactura);
         this._facturaService.save(factura);
-        response.put("response", Integer.valueOf(200));
+        response.put("response", 200);
         response.put("clave", c.getClave());
         response.put("consecutivo", c.getConsecutivo());
         response.put("fechaEmision", c.getFechaEmision());
         response.put("fileXmlSign", nameFacturaFirmada);
-        return new ResponseEntity(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
       } 
       this.log.info("El emisor no existe");
-      response.put("response", Integer.valueOf(401));
+      response.put("response", 401);
       response.put("msj", "El usuario o token no éxiste.");
-      return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+      return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     } catch (Exception e) {
       e.printStackTrace();
       this._comprobantesElectronicosService.deleteById(eliminarConsecutivo);
-      response.put("response", Integer.valueOf(401));
+      response.put("response", 401);
       response.put("msj", "Error generado, revise bien el JSON que esta enviando.");
-      return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+      return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     } finally {
-      emisor = "";
       this._certificado = "";
       this._keyCertificado = "";
     } 
@@ -809,8 +810,8 @@ public class RecepcionController {
     m = objectMapper.readTree(j);
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     String fechaEmision = format.format(new Date()) + "-06:00";
-    Long consecutivoCe = Long.valueOf(Long.parseLong("0"));
-    Long consecutivoEm = Long.valueOf(Long.parseLong("0"));
+    Long consecutivoCe = Long.parseLong("0");
+    Long consecutivoEm = Long.parseLong("0");
     String tipoDocumento = m.path("tipoDocumento").asText();
     String emisor = m.path("emisor").asText();
     String tokenAccess = m.path("tokenAccess").asText().trim();
@@ -840,9 +841,9 @@ public class RecepcionController {
             break;
         } 
       } else {
-        response.put("response", Integer.valueOf(401));
+        response.put("response", 401);
         response.put("msj", "La sucursal o la terminal no existen.");
-        return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
       } 
       this._certificado = this.pathUploadFilesApi + "/" + emisor + "/cert/" + e.getCertificado();
       this._keyCertificado = e.getPingApi();
@@ -851,13 +852,13 @@ public class RecepcionController {
       CCampoFactura c = new CCampoFactura();
       ComprobantesElectronicos ce = this._comprobantesElectronicosService.findByEmisor(emisor, tipoDocumento.trim(), m.path("sucursal").asInt(), m.path("terminal").asInt(), e.getAmbiente());
       if (ce != null) {
-        consecutivoCe = Long.valueOf(ce.getConsecutivo().longValue() + 1L);
+        consecutivoCe = ce.getConsecutivo() + 1L;
         this.log.info("Consecutivo actual " + consecutivoCe);
       } else {
-        consecutivoCe = Long.valueOf(Long.parseLong("1"));
+        consecutivoCe = Long.parseLong("1");
         this.log.info("Asigno 1 al consecutivo " + consecutivoCe);
       } 
-      Long consecutivoFinal = (consecutivoCe.longValue() < consecutivoEm.longValue()) ? consecutivoEm : consecutivoCe;
+      Long consecutivoFinal = (consecutivoCe < consecutivoEm) ? consecutivoEm : consecutivoCe;
       String generaClave = this._sender.getClave(tipoDocumento, "0" + e.getTipoDeIdentificacion().getId(), emisor, m
           .path("situacion").asText(), e.getCodigoPais(), consecutivoFinal.toString(), this._funcionesService
           .getCodigoSeguridad(8), m.path("sucursal").asText(), m.path("terminal").asText());
@@ -894,8 +895,12 @@ public class RecepcionController {
       c.setDetalleMensaje(m.path("detalleMensaje").asText());
       c.setCodigoActividad(m.path("codigo_actividad").asText());
       c.setCondicionImpuesto(m.path("condicion_impuesto").asText());
-      Double m1 = Double.valueOf((m.path("monto_total_impuesto_acreditar") != null && m.path("monto_total_impuesto_acreditar").asDouble() > 0.0D) ? m.path("monto_total_impuesto_acreditar").asDouble() : 0.0D);
-      Double m2 = Double.valueOf((m.path("monto_total_de_gasto_aplicable") != null && m.path("monto_total_de_gasto_aplicable").asDouble() > 0.0D) ? m.path("monto_total_de_gasto_aplicable").asDouble() : 0.0D);
+      Double m1 = (m.path("monto_total_impuesto_acreditar") != null
+          && m.path("monto_total_impuesto_acreditar").asDouble() > 0.0D) ? m.path(
+          "monto_total_impuesto_acreditar").asDouble() : 0.0D;
+      Double m2 = (m.path("monto_total_de_gasto_aplicable") != null
+          && m.path("monto_total_de_gasto_aplicable").asDouble() > 0.0D) ? m.path(
+          "monto_total_de_gasto_aplicable").asDouble() : 0.0D;
       c.setMontoTotalImpuestoAcreditar(m1.toString());
       c.setMontoTotalDeGastoAplicable(m2.toString());
       c.setNumeroCedulaEmisor(m.path("NumeroCedulaEmisor").asText());
@@ -922,16 +927,16 @@ public class RecepcionController {
       mr.setClaveDocumentoEmisor(m.path("clave").asText());
       mr.setNumeroCedulaReceptor(emisor);
       this._mensajeReceptorService.save(mr);
-      response.put("response", Integer.valueOf(200));
+      response.put("response", 200);
       response.put("clave", c.getClave());
       response.put("consecutivo", c.getNumeroConsecutivoReceptor());
-      response.put("fechaEmision", "" + fechaEmision + "");
-      response.put("fileXmlSign", "" + nameFacturaXml + "-sign.xml");
-      return new ResponseEntity(response, HttpStatus.OK);
+      response.put("fechaEmision", fechaEmision);
+      response.put("fileXmlSign", nameFacturaXml + "-sign.xml");
+      return new ResponseEntity<>(response, HttpStatus.OK);
     } 
-    response.put("response", Integer.valueOf(401));
+    response.put("response", 401);
     response.put("msj", "El usuario o token no éxiste");
-    return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+    return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
   }
   
   public static String getCharacterDataFromElement(Element e) {
