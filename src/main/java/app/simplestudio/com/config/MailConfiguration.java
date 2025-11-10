@@ -61,9 +61,6 @@ public class MailConfiguration {
         props.put("mail.smtp.timeout", timeout);
         props.put("mail.smtp.writetimeout", writeTimeout);
         
-        // Propiedades adicionales para debug
-        props.put("mail.debug", "true"); // Cambiado a true según tu config
-        
         // Para Gmail con SSL (puerto 465)
         if (host.contains("gmail") && port == 465) {
             props.put("mail.smtp.ssl.trust", "smtp.gmail.com");

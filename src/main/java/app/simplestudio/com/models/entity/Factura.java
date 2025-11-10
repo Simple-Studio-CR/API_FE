@@ -3,6 +3,8 @@ package app.simplestudio.com.models.entity;
 import app.simplestudio.com.models.entity.FacturaOtrosCargos;
 import app.simplestudio.com.models.entity.FacturaReferencia;
 import app.simplestudio.com.models.entity.ItemFactura;
+import jakarta.persistence.Transient;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.CascadeType;
@@ -46,6 +48,43 @@ public class Factura {
   
   @Column(length = 20)
   private String consecutivo;
+
+  @Transient
+  private String proveedorSistemas;           // header 4.4
+
+  @Transient
+  private String codigoActividadReceptor;     // header 4.4
+
+  @Transient
+  private BigDecimal medioPagoTotal1;
+  @Transient
+  private BigDecimal medioPagoTotal2;
+  @Transient
+  private BigDecimal medioPagoTotal3;
+  @Transient
+  private BigDecimal medioPagoTotal4;
+
+  @Transient
+  private String medioPagoOtros1;
+  @Transient
+  private String medioPagoOtros2;
+  @Transient
+  private String medioPagoOtros3;
+  @Transient
+  private String medioPagoOtros4;
+
+  @Transient
+  private String repTipoDocReferencia;     // (ej) "FE"|"TE"|"ND"|"NC"|"FEE"
+  @Transient
+  private String repNumeroReferencia;      // clave o consecutivo del doc referenciado
+  @Transient
+  private String repFechaReferencia;       // ISO 8601 (ej: "2025-11-10T12:34:56-06:00")
+
+  @Transient
+  private String repObservaciones;         // opcional
+
+  @Transient
+  private List<RepPago> repPagos = new ArrayList<>();
   
   @Column(name = "codigoActividad", length = 6)
   private String codigoActividad;
@@ -785,5 +824,44 @@ public class Factura {
   public void addOtrosCargos(FacturaOtrosCargos otrosCargos) {
     this.itemsOtrosCargos.add(otrosCargos);
   }
+
+  public String getProveedorSistemas() { return proveedorSistemas; }
+  public void setProveedorSistemas(String v) { this.proveedorSistemas = v; }
+
+  public String getCodigoActividadReceptor() { return codigoActividadReceptor; }
+  public void setCodigoActividadReceptor(String v) { this.codigoActividadReceptor = v; }
+
+  public BigDecimal getMedioPagoTotal1() { return medioPagoTotal1; }
+  public void setMedioPagoTotal1(BigDecimal v) { this.medioPagoTotal1 = v; }
+  public BigDecimal getMedioPagoTotal2() { return medioPagoTotal2; }
+  public void setMedioPagoTotal2(BigDecimal v) { this.medioPagoTotal2 = v; }
+  public BigDecimal getMedioPagoTotal3() { return medioPagoTotal3; }
+  public void setMedioPagoTotal3(BigDecimal v) { this.medioPagoTotal3 = v; }
+  public BigDecimal getMedioPagoTotal4() { return medioPagoTotal4; }
+  public void setMedioPagoTotal4(BigDecimal v) { this.medioPagoTotal4 = v; }
+
+  public String getMedioPagoOtros1() { return medioPagoOtros1; }
+  public void setMedioPagoOtros1(String v) { this.medioPagoOtros1 = v; }
+  public String getMedioPagoOtros2() { return medioPagoOtros2; }
+  public void setMedioPagoOtros2(String v) { this.medioPagoOtros2 = v; }
+  public String getMedioPagoOtros3() { return medioPagoOtros3; }
+  public void setMedioPagoOtros3(String v) { this.medioPagoOtros3 = v; }
+  public String getMedioPagoOtros4() { return medioPagoOtros4; }
+  public void setMedioPagoOtros4(String v) { this.medioPagoOtros4 = v; }
+
+  public String getRepTipoDocReferencia() { return repTipoDocReferencia; }
+  public void setRepTipoDocReferencia(String repTipoDocReferencia) { this.repTipoDocReferencia = repTipoDocReferencia; }
+
+  public String getRepNumeroReferencia() { return repNumeroReferencia; }
+  public void setRepNumeroReferencia(String repNumeroReferencia) { this.repNumeroReferencia = repNumeroReferencia; }
+
+  public String getRepFechaReferencia() { return repFechaReferencia; }
+  public void setRepFechaReferencia(String repFechaReferencia) { this.repFechaReferencia = repFechaReferencia; }
+
+  public String getRepObservaciones() { return repObservaciones; }
+  public void setRepObservaciones(String repObservaciones) { this.repObservaciones = repObservaciones; }
+
+  public List<RepPago> getRepPagos() { return repPagos; }
+  public void setRepPagos(List<RepPago> repPagos) { this.repPagos = repPagos; }
 }
 

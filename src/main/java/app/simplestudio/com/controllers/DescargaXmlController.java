@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping({"/api-4.3"})
+@RequestMapping({"/api-4.4"})
 public class DescargaXmlController {
   @Value("${path.upload.files.api}")
   private String pathUploadFilesApi;

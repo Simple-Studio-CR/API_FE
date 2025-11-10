@@ -4,6 +4,10 @@ public class CCampoFactura {
   public String codigoActividad;
   
   public String receptorIdentificacionExtranjero;
+
+  public String proveedorSistemas;
+
+  public String actividadEconomicaReceptor;
   
   public String otrasSenasExtranjero;
   
@@ -829,6 +833,22 @@ public class CCampoFactura {
   
   public void setMontoTotalDeGastoAplicable(String montoTotalDeGastoAplicable) {
     this.montoTotalDeGastoAplicable = montoTotalDeGastoAplicable;
+  }
+
+  public String getActividadEconomicaReceptor() {
+    return actividadEconomicaReceptor;
+  }
+
+  public void setActividadEconomicaReceptor(String actividadEconomicaReceptor) {
+    this.actividadEconomicaReceptor = actividadEconomicaReceptor;
+  }
+
+  public String getProveedorSistemas() {
+    return proveedorSistemas;
+  }
+
+  public void setProveedorSistemas(String proveedorSistemas) {
+    this.proveedorSistemas = proveedorSistemas;
   }
 }
 

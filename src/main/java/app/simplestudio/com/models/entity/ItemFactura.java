@@ -1,6 +1,7 @@
 package app.simplestudio.com.models.entity;
 
 import app.simplestudio.com.models.entity.ImpuestosItemFactura;
+import jakarta.persistence.Transient;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.CascadeType;
@@ -33,6 +34,38 @@ public class ItemFactura {
   
   @Column(name = "codigo", length = 13)
   private String codigo;
+
+  // === MH 4.4: códigos de descuento por línea (transient, no DB) ===
+  @Transient
+  private String codigoDescuento;       // para montoDescuento (slot 1)
+  @Transient
+  private String codigoDescuentoOtro;   // si codigoDescuento == "99"
+
+  @Transient
+  private String codigoDescuento2;
+  @Transient
+  private String codigoDescuentoOtro2;
+
+  @Transient
+  private String codigoDescuento3;
+  @Transient
+  private String codigoDescuentoOtro3;
+
+  @Transient
+  private String codigoDescuento4;
+  @Transient
+  private String codigoDescuentoOtro4;
+
+  @Transient
+  private String codigoDescuento5;
+  @Transient
+  private String codigoDescuentoOtro5;
+
+  @Transient
+  private List<ItemSurtido> surtidoComponentes = new ArrayList<>();
+
+  public List<ItemSurtido> getSurtidoComponentes() { return surtidoComponentes; }
+  public void setSurtidoComponentes(List<ItemSurtido> v) { this.surtidoComponentes = v; }
   
   @Column(name = "codigo_comercial_tipo", length = 2)
   private String codigoComercialTipo;
@@ -396,4 +429,29 @@ public class ItemFactura {
   public void addItemFacturaImpuestos(ImpuestosItemFactura item) {
     this.impuestosItemFactura.add(item);
   }
+
+  public String getCodigoDescuento() { return codigoDescuento; }
+  public void setCodigoDescuento(String v) { this.codigoDescuento = v; }
+  public String getCodigoDescuentoOtro() { return codigoDescuentoOtro; }
+  public void setCodigoDescuentoOtro(String v) { this.codigoDescuentoOtro = v; }
+
+  public String getCodigoDescuento2() { return codigoDescuento2; }
+  public void setCodigoDescuento2(String v) { this.codigoDescuento2 = v; }
+  public String getCodigoDescuentoOtro2() { return codigoDescuentoOtro2; }
+  public void setCodigoDescuentoOtro2(String v) { this.codigoDescuentoOtro2 = v; }
+
+  public String getCodigoDescuento3() { return codigoDescuento3; }
+  public void setCodigoDescuento3(String v) { this.codigoDescuento3 = v; }
+  public String getCodigoDescuentoOtro3() { return codigoDescuentoOtro3; }
+  public void setCodigoDescuentoOtro3(String v) { this.codigoDescuentoOtro3 = v; }
+
+  public String getCodigoDescuento4() { return codigoDescuento4; }
+  public void setCodigoDescuento4(String v) { this.codigoDescuento4 = v; }
+  public String getCodigoDescuentoOtro4() { return codigoDescuentoOtro4; }
+  public void setCodigoDescuentoOtro4(String v) { this.codigoDescuentoOtro4 = v; }
+
+  public String getCodigoDescuento5() { return codigoDescuento5; }
+  public void setCodigoDescuento5(String v) { this.codigoDescuento5 = v; }
+  public String getCodigoDescuentoOtro5() { return codigoDescuentoOtro5; }
+  public void setCodigoDescuentoOtro5(String v) { this.codigoDescuentoOtro5 = v; }
 }

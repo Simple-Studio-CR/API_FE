@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@RequestMapping({"/api-4.3"})
+@RequestMapping({"/api-4.4"})
 public class ImpresionController {
   @Autowired
   public JavaMailSender emailSender;

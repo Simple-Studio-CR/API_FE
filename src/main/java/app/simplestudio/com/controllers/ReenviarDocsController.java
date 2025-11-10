@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping({"/api-4.3"})
+@RequestMapping({"/api-4.4"})
 public class ReenviarDocsController {
   @Autowired
   public JavaMailSender emailSender;
